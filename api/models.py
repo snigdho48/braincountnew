@@ -2,7 +2,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from phonenumber_field.modelfields import PhoneNumberField
-
+from api.services.constants import *
 
 
 class Supervisor(models.Model):
@@ -17,45 +17,66 @@ class Supervisor(models.Model):
     def __str__(self):
         return self.user.username
 
+
 class Billboard(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    location = models.CharField(max_length=255)
-    latitude = models.FloatField()
-    longitude = models.FloatField()
-    title = models.CharField(max_length=255)
-    location = models.CharField(max_length=255)
-    front = models.ImageField(upload_to='billboard_images/')
-    left = models.ImageField(upload_to='billboard_images/')
-    right = models.ImageField(upload_to='billboard_images/')
-    close = models.ImageField(upload_to='billboard_images/')
-    billboard_type = models.CharField(max_length=50)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=BILLBOARD_STATUS,null=True, blank=True)
+    title = models.CharField(max_length=255,null=True, blank=True)
+    location = models.CharField(max_length=255,null=True, blank=True)
+    front = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    left = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    right = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    close = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    billboard_type = models.CharField(choices=BILLBORD_TYPES, max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title 
+
+   
+class Campaign(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    billboards = models.ManyToManyField('Billboard', related_name='campaigns')
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    title = models.CharField(max_length=255,null=True, blank=True)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    monitor_time= models.TimeField(choices=MONITOR_TIME, null=True, blank=True)
+    duration = models.TimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
     
-    
-    
-BILLBOARD_STATUS = (
-    ('Good', 'Good'),
-    ('Broken', 'Broken'),
-    ('Under Maintenance', 'Under Maintenance'),
-    ('Not Working', 'Not Working'),
-    ('Not Clear', 'Not Clear'),
-    ('Not Visible', 'Not Visible'),
-    ('Other', 'Other'),
-)
 
 class Monitoring(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
-    latitude = models.FloatField()
-    longitude = models.FloatField()
-    status = models.CharField(max_length=20, choices=BILLBOARD_STATUS)
-    billboard = models.ForeignKey('Billboard', on_delete=models.CASCADE)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=BILLBOARD_STATUS,null=True, blank=True)
+    billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING)
+    front = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    left = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    right = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    close = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return str(self.uuid)
+    
+class MonitoringRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    billboards = models.ManyToManyField('Billboard', on_delete=models.DO_NOTHING)
+    is_accepeted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user.username
+        return str(self.uuid)

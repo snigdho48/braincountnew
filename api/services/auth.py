@@ -1,21 +1,11 @@
-
-
-from datetime import datetime, timedelta, timezone
-import json
-from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from rest_framework import status
 import base64
-from django.contrib.auth.models import User, Group
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
-from django.db.models import Sum,Avg
-from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
+from api.serializer import TokenAuth
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
-from ..serializer import *
 class LoginApiView(APIView):
     serializer_class = TokenAuth
 
@@ -25,10 +15,15 @@ class LoginApiView(APIView):
 
         user = serializer.validated_data['user']
         token = serializer.get_token(user)
-
+        
+        
+        
+       
 
         return Response({
             "status": "Login Successful",
+            "username": user.username,
+            "email": user.email,
             "access_token":str(token.access_token),
             "groups" : user.groups.first().name,
 
@@ -37,10 +32,16 @@ class LoginApiView(APIView):
         
         
 class LogoutApiView(APIView):
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    def get(self, request, format=None):
+        refresh_token = request.headers.get('Authorization')
 
-    def post(self, request):
-        request.user.auth_token.blacklist()
-        return Response({"status": "Logout Successful"}, status=status.HTTP_200_OK)
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token.split(' ')[1])
+                token.blacklist() 
+                return Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"message": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({"message": "Refresh token not found"}, status=status.HTTP_400_BAD_REQUEST)
     
