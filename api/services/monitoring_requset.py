@@ -1,6 +1,5 @@
 
 from api.models import MonitoringRequest
-from api.serializer import MonitoringRequest
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 import base64
@@ -11,6 +10,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
 import uuid
+from api.serializer import MonitoringRequestSerializer
 
 
 class MonitoringRequestApiView(APIView):
@@ -18,8 +18,8 @@ class MonitoringRequestApiView(APIView):
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
-        request=MonitoringRequest,
-        responses={200: MonitoringRequest, 400: MonitoringRequest.errors},
+        request=MonitoringRequestSerializer,
+        responses={200: MonitoringRequestSerializer, 400: MonitoringRequestSerializer.errors},
         description="Get and create monitoring records",
         tags=["Monitoring"],
         parameters=[
@@ -31,18 +31,18 @@ class MonitoringRequestApiView(APIView):
             monitoring = MonitoringRequest.objects.all()
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
-            serializer = MonitoringRequest(monitoring, many=True)
+            serializer = MonitoringRequestSerializer(monitoring, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.user.groups.filter(name='supervisor').exists():
             monitoring = MonitoringRequest.objects.filter(user=request.user)
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
-            serializer = MonitoringRequest(monitoring, many=True)
+            serializer = MonitoringRequestSerializer(monitoring, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
     def post(self, request):
-        serializer = MonitoringRequest(data=request.data)
+        serializer = MonitoringRequestSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -50,7 +50,7 @@ class MonitoringRequestApiView(APIView):
     def patch(self, request):
         if request.user.groups.filter(name='admin').exists():
             monitoring = get_object_or_404(MonitoringRequest, uuid=request.data['uuid'])
-            serializer = MonitoringRequest(monitoring, data=request.data, partial=True)
+            serializer = MonitoringRequestSerializer(monitoring, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
