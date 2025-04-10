@@ -2,7 +2,8 @@ from rest_framework import serializers
 from django.contrib.auth.models import User,Group
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
-from uuid import UUID
+from django.shortcuts import get_object_or_404
+
 
 
 class TokenAuth(TokenObtainPairSerializer):
@@ -72,7 +73,7 @@ class MonitoringSerializer(serializers.ModelSerializer):
     billboard = serializers.UUIDField(source='billboard.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
     class Meta:
         model = Monitoring
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user']
+        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard','billboard_type', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user']
     def update(self, instance, validated_data):
         # Don't allow changes to the billboard
         # if logined user is not admin
@@ -80,11 +81,10 @@ class MonitoringSerializer(serializers.ModelSerializer):
             instance.billboard = validated_data.get('billboard', instance.billboard)
             instance.user = validated_data.get('user', validated_data['user_id'])
         validated_data.pop('billboard', None) 
-        # if not (instance.front and instance.left and instance.right and instance.close):
-        #     raise serializers.ValidationError("Please upload Images")
-        # if instance.status is None:
-        #     raise serializers.ValidationError("Please select status")
-            
+        if not (instance.front and instance.left and instance.right and instance.close):
+            raise serializers.ValidationError("Please upload Images")
+        if instance.status is None:
+            raise serializers.ValidationError("Please select status")
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.status = validated_data.get('status', instance.status)
@@ -105,3 +105,91 @@ class BillboardSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
         }
+        
+class CampaignSerializer(serializers.ModelSerializer):
+    billboards = BillboardSerializer(many=True, required=False)
+    user = UserSerializer(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
+    billboard = serializers.UUIDField(source='billboard.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
+    monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
+    monitoring_requests = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True
+    )
+    
+    class Meta:
+        model = Campaign
+        fields = '__all__'
+        extra_kwargs = {
+            'user': {'required': False},
+            'billboard': {'required': False},
+        }
+    def create(self, validated_data):
+        billboards_data = validated_data.pop('billboards', [])
+        campaign = Campaign.objects.create(**validated_data)
+        for billboard_data in billboards_data:
+            billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
+            monitoring_request = MonitoringRequest.objects.create(
+                user=validated_data.get('user'),
+                billboard=billboard,
+                campaign=campaign,
+            )
+            campaign.billboards.add(billboard)
+            campaign.monitoring_requests.add(monitoring_request)
+            
+        return campaign
+    def update(self, instance, validated_data):
+        billboards_data = validated_data.pop('billboards', [])
+        instance.user = validated_data.get('user', instance.user)
+        instance.title = validated_data.get('title', instance.title)
+        instance.start_date = validated_data.get('start_date', instance.start_date)
+        instance.end_date = validated_data.get('end_date', instance.end_date)
+        monitoring_requests_data = validated_data.pop('monitoring_requests', [])
+        instance.monitor_time = validated_data.get('monitor_time', instance.monitor_time)
+        instance.start_at = validated_data.get('start_at', instance.start_at)
+        instance.end_at = validated_data.get('end_at', instance.end_at)
+        instance.save()
+
+        # Update billboards
+        for billboard_data in billboards_data:
+            billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
+            instance.billboards.add(billboard)
+        for monitoring_request_data in monitoring_requests_data:
+            monitoring_request = MonitoringRequest.objects.create(**monitoring_request_data)
+            instance.monitoring_requests.add(monitoring_request)
+
+        return instance
+class CustomBillboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Billboard
+        fields = ['uuid',  'status', 'title', 'location', 'billboard_type']
+class MonitoringRequestSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
+    billboards = CustomBillboardSerializer(many=True, required=False)
+    billboards = serializers.ListField(
+        child=serializers.UUIDField(), write_only=True
+    )
+    class Meta:
+        model = Monitoring
+        fields = '__all__'
+
+    def create(self, validated_data):
+        billboards_data = validated_data.pop('billboards', [])
+        monitoring = Monitoring.objects.create(**validated_data)
+        for billboard_data in billboards_data:
+            billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
+            monitoring.billboards.add(billboard)
+        return monitoring
+    def update(self, instance, validated_data):
+        billboards_data = validated_data.pop('billboards', [])
+        instance.user = validated_data.get('user', instance.user)
+        instance.is_accepted = validated_data.get('is_accepted', instance.is_accepted)
+        
+
+        # Update billboards
+        for billboard_data in billboards_data:
+            billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
+            instance.billboards.add(billboard)
+
+
+        return instance

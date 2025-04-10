@@ -18,5 +18,6 @@ urlpatterns = [
   path('auth/logout/', LogoutApiView.as_view(), name='logout'),
   path('monitoring/', MonitoringView.as_view(), name='monitoring'),
   path('monitoring/billboard-status/', BillboardStatusView.as_view(), name='billboard-status'),
+  
     
 ]+ apidoc_urlpatterns

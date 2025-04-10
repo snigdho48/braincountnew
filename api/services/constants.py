@@ -15,8 +15,8 @@ BILLBORD_TYPES = (
 )
 
 MONITOR_TIME = (
-    ('1 time in 30days', '1 time in 30days'),
-    ('2 time in 30days', '3 time in 30days'),
-    ('3 time in 30days', '3 time in 30days'),
-     ('4 time in 30days', '4 time in 30days'),
+    ('1time', '1 time in 30days'),
+    ('2times', '2 time in 30days'),
+    ('3time', '3 time in 30days'),
+     ('4time', '4 time in 30days'),
 ) 

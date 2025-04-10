@@ -10,5 +10,7 @@ from api.models import *
 admin.site.register(Supervisor)
 admin.site.register(Billboard)
 admin.site.register(Monitoring)
+admin.site.register(Campaign)
+admin.site.register(MonitoringRequest)
 
 # Register your models here.
