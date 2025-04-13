@@ -21,6 +21,7 @@ urlpatterns = [
   path('campaign/', CampaignApiView.as_view(), name='campaign'),
   path('billboard/', BillboardApiView.as_view(), name='billboard'),
   path('monitoring-request/', MonitoringRequestApiView.as_view(), name='monitoring-request'),
+  path('monitoring-request/status', MonitoringRequestStatus.as_view(), name='monitoring-request-status'),
   
   
     

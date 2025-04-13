@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
 import uuid
 from api.serializer import MonitoringRequestSerializer
+from api.services.constants import TASK_CHOICES
 
 
 class MonitoringRequestApiView(APIView):
@@ -24,6 +25,7 @@ class MonitoringRequestApiView(APIView):
         tags=["Monitoring"],
         parameters=[
             OpenApiParameter(name='uuid', type=uuid.UUID, description="ID of the monitoring record"),
+            OpenApiParameter(name='status', type=str, description="Status of the monitoring record"),
         ],
     )
     def get(self, request):
@@ -31,12 +33,16 @@ class MonitoringRequestApiView(APIView):
             monitoring = MonitoringRequest.objects.all()
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
+            if request.query_params.get('status'):
+                monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
             serializer = MonitoringRequestSerializer(monitoring, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.user.groups.filter(name='supervisor').exists():
             monitoring = MonitoringRequest.objects.filter(user=request.user)
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
+            if request.query_params.get('status'):
+                monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
             serializer = MonitoringRequestSerializer(monitoring, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
@@ -82,3 +88,34 @@ class MonitoringRequestApiView(APIView):
             return Response({"message": "Monitoring record deleted"}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+        
+class MonitoringRequestStatus(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+  
+    @extend_schema(
+        request=None,
+        description="Get Task Choices status",
+        tags=["Billboard"],
+        responses={
+            200: OpenApiResponse(
+                description="Task Choices status",
+                examples=[
+                    {
+                        "name": "Success",
+                        "value": {
+                "status": [statustuple[0] for statustuple in TASK_CHOICES]
+                        }
+                    }
+                ]
+            )
+        }
+    )
+    def get(self, request):
+        return Response(
+            {
+                "status": [statustuple[0] for statustuple in TASK_CHOICES]
+            },
+            status=status.HTTP_200_OK
+        )
