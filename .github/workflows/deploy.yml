@@ -26,7 +26,7 @@ jobs:
           cd /projects/
           rm -rf braincount
           git clone https://github.com/snigdho48/braincountnew.git braincount
-          cd braincountnew
+          cd braincount
           python3 -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt

@@ -177,9 +177,12 @@ if DEBUG:
     STATIC_ROOT = BASE_DIR / 'static'
 else:
     STATIC_URL = '/static/'
-    STATIC_ROOT = '/projects/prbackendpublisher/static/'
+    STATIC_ROOT = '/projects/braincount/static/'
 
 MEDIA_URL = MEDIA_FULL_URL = '/media/'
-MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'media')
+if DEBUG:
+    MEDIA_ROOT = os.path.join(os.path.dirname(BASE_DIR), 'media')
+else:
+    MEDIA_ROOT = '/projects/braincount/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
