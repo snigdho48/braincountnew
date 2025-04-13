@@ -73,7 +73,7 @@ class MonitoringSerializer(serializers.ModelSerializer):
     billboard = serializers.UUIDField(source='billboard.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
     class Meta:
         model = Monitoring
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard','billboard_type', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user']
+        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user']
     def update(self, instance, validated_data):
         # Don't allow changes to the billboard
         # if logined user is not admin
