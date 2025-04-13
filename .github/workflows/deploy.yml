@@ -24,8 +24,8 @@ jobs:
       run: |
         sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'EOF'
           cd /projects/
-          rm -rf braincountnew
-          git clone https://github.com/snigdho48/y_fi_backend.git braincountnew
+          rm -rf braincount
+          git clone https://github.com/snigdho48/braincountnew.git braincount
           cd braincountnew
           python3 -m venv venv
           source venv/bin/activate
