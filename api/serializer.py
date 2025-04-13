@@ -49,7 +49,6 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = ['name'] 
 class UserSerializer(serializers.ModelSerializer):
-    group = serializers.SerializerMethodField()
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -57,7 +56,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password']
         extra_kwargs = {
             'password': {'write_only': True},
-            'groups': {'required': False},
         }
 
 
