@@ -38,7 +38,7 @@ jobs:
           chmod -R 755 media
           chmod 755 /projects
           systemctl daemon-reload
-          systemctl restart gunicorn
+          systemctl restart braincount
           systemctl restart nginx
           echo "Deployment successful"
         EOF
