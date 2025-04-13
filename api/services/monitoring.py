@@ -42,7 +42,7 @@ class MonitoringView(APIView):
     
     @extend_schema(
         request=MonitoringSerializer,
-        responses={200: MonitoringSerializer, 400: MonitoringSerializer.errors},
+        responses={200: MonitoringSerializer(many=True) , 400: MonitoringSerializer.errors},
         description="Get and create monitoring records",
         tags=["Monitoring"],
         parameters=[
