@@ -180,7 +180,7 @@ class MonitoringRequestSerializer(serializers.ModelSerializer):
         child=serializers.UUIDField(), write_only=True
     )
     class Meta:
-        model = Monitoring
+        model = MonitoringRequest
         fields = '__all__'
 
     def create(self, validated_data):
