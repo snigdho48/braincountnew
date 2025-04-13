@@ -54,18 +54,13 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'group', 'password']
+        fields = ['username', 'email', 'password']
         extra_kwargs = {
             'password': {'write_only': True},
             'groups': {'required': False},
         }
 
-    # Custom method to return only the first group
-    def get_groups(self, obj):
-        # Return only the first group or None if no groups exist
-        if obj.groups.exists():
-            return  obj.groups.first().name
-        return []
+
 
 
 class MonitoringSerializer(serializers.ModelSerializer):

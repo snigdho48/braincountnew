@@ -20,8 +20,8 @@ urlpatterns = [
   path('monitoring/billboard-status/', BillboardStatusView.as_view(), name='billboard-status'),
   path('campaign/', CampaignApiView.as_view(), name='campaign'),
   path('billboard/', BillboardApiView.as_view(), name='billboard'),
-  path('monitoring-request/', MonitoringRequestApiView.as_view(), name='monitoring-request'),
-  path('monitoring-request/status', MonitoringRequestStatus.as_view(), name='monitoring-request-status'),
+  path('monitoring_request/', MonitoringRequestApiView.as_view(), name='monitoring-request'),
+  path('monitoring_request/status', MonitoringRequestStatus.as_view(), name='monitoring-request-status'),
   
   
     

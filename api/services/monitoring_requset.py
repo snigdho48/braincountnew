@@ -31,37 +31,47 @@ class MonitoringRequestApiView(APIView):
     def get(self, request):
         if request.user.groups.filter(name='admin').exists():
             monitoring = MonitoringRequest.objects.all()
-            pendind = MonitoringRequest.objects.filter(is_accepeted='PENDING').count()
+            pending = MonitoringRequest.objects.filter(is_accepeted='PENDING').count()
             accepted = MonitoringRequest.objects.filter(is_accepeted='ACCEPTED').count()
-            all_task = MonitoringRequest.objects.all().count()
+            all_task = monitoring.count()
+
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
             if request.query_params.get('status'):
                 monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
+
             serializer = MonitoringRequestSerializer(monitoring, many=True)
             serializer_data = {
                 "monitoring": serializer.data,
-                "pending": pendind,
+                "pending": pending,
                 "accepted": accepted,
                 "all_task": all_task
             }
             return Response(serializer_data, status=status.HTTP_200_OK)
+
         elif request.user.groups.filter(name='supervisor').exists():
             monitoring = MonitoringRequest.objects.filter(user=request.user)
+            pending = monitoring.filter(is_accepeted='PENDING').count()
+            accepted = monitoring.filter(is_accepeted='ACCEPTED').count()
+            all_task = monitoring.count()
+
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
             if request.query_params.get('status'):
                 monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
+
             serializer = MonitoringRequestSerializer(monitoring, many=True)
             serializer_data = {
                 "monitoring": serializer.data,
-                "pending": pendind,
+                "pending": pending,
                 "accepted": accepted,
                 "all_task": all_task
             }
             return Response(serializer_data, status=status.HTTP_200_OK)
+
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+
     @extend_schema(
         request=MonitoringRequestSerializer,
         responses={200: MonitoringRequestSerializer, 400: MonitoringRequestSerializer.errors},
