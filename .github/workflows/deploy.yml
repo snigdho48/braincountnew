@@ -25,7 +25,6 @@ jobs:
         sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'EOF'
           cd /projects/braincount
           git pull https://github.com/snigdho48/braincountnew.git 
-          python3 -m venv venv
           source venv/bin/activate
           pip install -r requirements.txt
           mkdir -p static media
