@@ -3,6 +3,7 @@ from django.contrib.auth.models import User,Group
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
 from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema_field
 
 
 
@@ -110,12 +111,12 @@ class CampaignSerializer(serializers.ModelSerializer):
     billboards = BillboardSerializer(many=True, required=False)
     user = UserSerializer(read_only=True)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
-    billboard = serializers.UUIDField(source='billboard.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
-    monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
+    # monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
     monitoring_requests = serializers.ListField(
         child=serializers.UUIDField(), write_only=True
     )
-    
+    all_monitorings = serializers.SerializerMethodField()
+
     class Meta:
         model = Campaign
         fields = '__all__'
@@ -123,6 +124,15 @@ class CampaignSerializer(serializers.ModelSerializer):
             'user': {'required': False},
             'billboard': {'required': False},
         }
+    @extend_schema_field(MonitoringSerializer(many=True))
+    def get_all_monitorings(self, obj):
+        monitorings = Monitoring.objects.filter(
+            updated_at__date__gte=obj.start_date,
+            updated_at__date__lte=obj.end_date,
+            updated_at__time__gte=obj.start_at,
+            updated_at__time__lte=obj.end_at
+        )
+        return MonitoringSerializer(monitorings, many=True).data
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboards', [])
         campaign = Campaign.objects.create(**validated_data)

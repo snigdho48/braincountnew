@@ -18,13 +18,23 @@ import uuid
 class BillboardStatusView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    
+
     @extend_schema(
         request=None,
         description="Get billboard status",
         tags=["Billboard"],
         responses={
-            200: OpenApiResponse(description="Billboard status"),
+            200: OpenApiResponse(
+                description="Billboard status",
+                examples=[
+                    {
+                        "name": "Success",
+                        "value": {
+                "status": [statustuple[0] for statustuple in BILLBOARD_STATUS]
+                        }
+                    }
+                ]
+            )
         }
     )
     def get(self, request):
@@ -34,7 +44,6 @@ class BillboardStatusView(APIView):
             },
             status=status.HTTP_200_OK
         )
-
     
 class MonitoringView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -42,7 +51,7 @@ class MonitoringView(APIView):
     
     @extend_schema(
         request=MonitoringSerializer,
-        responses={200: MonitoringSerializer(many=True) , 400: MonitoringSerializer.errors},
+        responses={200: MonitoringSerializer , 400: MonitoringSerializer.errors},
         description="Get and create monitoring records",
         tags=["Monitoring"],
         parameters=[
