@@ -32,7 +32,6 @@ jobs:
           pip install -r requirements.txt
           mkdir -p static media
           python manage.py collectstatic --noinput
-          python manage.py migrate
           chown -R www-data:www-data static
           chown -R $USER:www-data media
           chmod -R 755 static
