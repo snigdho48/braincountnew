@@ -1,0 +1,43 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Install sshpass
+      run: sudo apt-get update && sudo apt-get install -y sshpass
+
+    - name: Deploy to server
+      env:
+        SERVER_IP: 174.138.29.36
+        SERVER_USER: root
+        SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+      run: |
+        sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no $SERVER_USER@$SERVER_IP << 'EOF'
+          cd /projects/
+          rm -rf braincountnew
+          git clone https://github.com/snigdho48/y_fi_backend.git braincountnew
+          cd braincountnew
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          mkdir -p static media
+          chown -R www-data:www-data static
+          chown -R $USER:www-data media
+          chmod -R 755 static
+          chmod -R 755 media
+          chmod 755 /projects
+          systemctl daemon-reload
+          systemctl restart gunicorn
+          systemctl restart nginx
+          echo "Deployment successful"
+        EOF
