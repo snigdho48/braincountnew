@@ -20,3 +20,10 @@ MONITOR_TIME = (
     ('3time', '3 time in 30days'),
      ('4time', '4 time in 30days'),
 ) 
+
+TASK_CHOICES = (
+    ('ACCEPTED','ACCEPTED'),
+    ('REJECTED','REJECTED'),
+    ('PENDING','PENDING'),
+    
+)

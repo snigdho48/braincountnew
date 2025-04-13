@@ -23,7 +23,7 @@ class MonitoringRequestApiView(APIView):
         description="Get and create monitoring records",
         tags=["Monitoring"],
         parameters=[
-            OpenApiParameter(name='uuid', type=uuid.uuid4, description="ID of the monitoring record"),
+            OpenApiParameter(name='uuid', type=uuid.UUID, description="ID of the monitoring record"),
         ],
     )
     def get(self, request):
@@ -41,12 +41,24 @@ class MonitoringRequestApiView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+    @extend_schema(
+        request=MonitoringRequestSerializer,
+        responses={200: MonitoringRequestSerializer, 400: MonitoringRequestSerializer.errors},
+        description="Create a new monitoring record",
+        tags=["Monitoring"],
+    )
     def post(self, request):
         serializer = MonitoringRequestSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @extend_schema(
+        request=MonitoringRequestSerializer,
+        responses={200: MonitoringRequestSerializer, 400: MonitoringRequestSerializer.errors},
+        description="Update a monitoring record",
+        tags=["Monitoring"],
+    )
     def patch(self, request):
         if request.user.groups.filter(name='admin').exists():
             monitoring = get_object_or_404(MonitoringRequest, uuid=request.data['uuid'])
@@ -57,6 +69,12 @@ class MonitoringRequestApiView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+    @extend_schema(
+        request=MonitoringRequestSerializer,
+        responses={200: OpenApiResponse(description="Monitoring record deleted")},
+        description="Delete a monitoring record",
+        tags=["Monitoring"],
+    )
     def delete(self, request):
         if request.user.groups.filter(name='admin').exists():
             monitoring = get_object_or_404(MonitoringRequest, uuid=request.data['uuid'])

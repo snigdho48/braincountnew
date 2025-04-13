@@ -76,7 +76,7 @@ class MonitoringRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING,related_name='monitoring_requests')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     billboards = models.ManyToManyField('Billboard',related_name='monitoring_requests')
-    is_accepeted = models.BooleanField(default=False)
+    is_accepeted = models.CharField(choices=TASK_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     campaign = models.ForeignKey('Campaign', on_delete=models.DO_NOTHING,related_name='monitoring_requests')

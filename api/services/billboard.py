@@ -23,8 +23,9 @@ class BillboardApiView(APIView):
         description="Get and create billboard records",
         tags=["Billboard"],
         parameters=[
-            OpenApiParameter(name='uuid', type=uuid.uuid4, description="ID of the billboard record"),
+            OpenApiParameter(name='uuid', type=uuid.UUID, description="UUID of the billboard", required=False),
         ],
+       
     )
     def get(self, request):
         if request.user.groups.filter(name='admin').exists():
@@ -39,6 +40,12 @@ class BillboardApiView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+    @extend_schema(
+        request=BillboardSerializer,
+        responses={200: BillboardSerializer, 400: BillboardSerializer.errors},
+        description="Create a new billboard record",
+        tags=["Billboard"],
+    )
     def post(self, request):
         if request.user.groups.filter(name='admin').exists():
             billboard = get_object_or_404(Billboard, uuid=request.data['uuid'])
@@ -49,6 +56,12 @@ class BillboardApiView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+    @extend_schema(
+        request=BillboardSerializer,
+        responses={200: BillboardSerializer, 400: BillboardSerializer.errors},
+        description="Update a billboard record",
+        tags=["Billboard"],
+    )
     def patch(self, request):
         if request.user.groups.filter(name='admin').exists():
             billboard = get_object_or_404(Billboard, uuid=request.data['uuid'])
@@ -59,10 +72,33 @@ class BillboardApiView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='uuid',
+                type=uuid.UUID,
+                location=OpenApiParameter.QUERY,
+                description="UUID of the billboard",
+                required=True,
+            )
+        ],
+        responses={200: BillboardSerializer, 403: None, 404: None},
+        description="Delete a billboard record",
+        tags=["Billboard"],
+    )
     def delete(self, request):
         if request.user.groups.filter(name='admin').exists():
-            billboard = get_object_or_404(Billboard, uuid=request.data['uuid'])
+            uuid_param = request.query_params.get('uuid')
+            if not uuid_param:
+                return Response({"message": "UUID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                billboard_uuid = uuid.UUID(uuid_param)
+            except ValueError:
+                return Response({"message": "Invalid UUID format"}, status=status.HTTP_400_BAD_REQUEST)
+
+            billboard = get_object_or_404(Billboard, uuid=billboard_uuid)
             billboard.delete()
             return Response({"message": "Billboard deleted successfully"}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to delete this data"}, status=status.HTTP_403_FORBIDDEN)

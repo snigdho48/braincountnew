@@ -70,14 +70,12 @@ class MonitoringView(APIView):
         else:
             return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
         
-        
     @extend_schema(
         request=MonitoringSerializer,
         responses={201: MonitoringSerializer, 400: MonitoringSerializer.errors},
         description="Create a new monitoring record",
         tags=["Monitoring"],
     )
-   
     def put(self, request):
         if request.user.groups.filter(name='supervisor').exists() or request.user.groups.filter(name='admin').exists():
             try:
