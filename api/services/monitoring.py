@@ -2,7 +2,7 @@
 from api.models import Monitoring,BILLBOARD_STATUS,Supervisor
 from api.serializer import MonitoringSerializer
 from django.shortcuts import get_object_or_404
-from rest_framework import status, viewsets
+from rest_framework import status
 import base64
 from django.contrib.auth.models import User, Group
 from rest_framework.response import Response
