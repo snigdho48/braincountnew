@@ -20,9 +20,9 @@ class BillboardStatusView(APIView):
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
-        parameters=[
-            OpenApiParameter(name='status', type=str, description="Status of the billboard"),
-        ],
+        request=None,
+        description="Get billboard status",
+        tags=["Billboard"],
         responses={
             200: OpenApiResponse(description="Billboard status"),
         }
