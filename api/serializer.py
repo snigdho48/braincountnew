@@ -120,10 +120,10 @@ class CampaignSerializer(serializers.ModelSerializer):
     @extend_schema_field(MonitoringSerializer(many=True))
     def get_all_monitorings(self, obj):
         monitorings = Monitoring.objects.filter(
-            updated_at__date__gte=obj.start_date,
-            updated_at__date__lte=obj.end_date,
-            updated_at__time__gte=obj.start_at,
-            updated_at__time__lte=obj.end_at
+            created_at__date__gte=obj.start_date,
+           created_at__date__lte=obj.end_date,
+            created_at__time__gte=obj.start_at,
+            created_at__time__lte=obj.end_at
         )
         return MonitoringSerializer(monitorings, many=True).data
     def create(self, validated_data):
@@ -166,33 +166,39 @@ class CustomBillboardSerializer(serializers.ModelSerializer):
         model = Billboard
         fields = ['uuid',  'status', 'title', 'location', 'billboard_type']
 class MonitoringRequestSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
-    billboards = CustomBillboardSerializer(many=True, required=False)
-    billboards = serializers.ListField(
-        child=serializers.UUIDField(), write_only=True
-    )
+    user_detail = UserSerializer(read_only=True)
+
+    billboards = serializers.PrimaryKeyRelatedField(queryset=Billboard.objects.all(), write_only=True)
+    billboard_detail = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = MonitoringRequest
         fields = '__all__'
+        extra_kwargs = {
+            'user': {'required': False},
+            'billboards': {'required': False},
+        }
+
+    @extend_schema_field(CustomBillboardSerializer)
+    def get_billboard_detail(self, obj):
+        billboard = obj.billboards 
+        return {
+            'uuid': billboard.uuid,
+            'status': billboard.status,
+            'title': billboard.title,
+        }
 
     def create(self, validated_data):
-        billboards_data = validated_data.pop('billboards', [])
-        monitoring = Monitoring.objects.create(**validated_data)
-        for billboard_data in billboards_data:
-            billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
-            monitoring.billboards.add(billboard)
+        user = validated_data.pop('user', None)
+        billboard = validated_data.pop('billboard', None)
+        monitoring = MonitoringRequest.objects.create(user=user, billboard=billboard, **validated_data)
         return monitoring
+
     def update(self, instance, validated_data):
-        billboards_data = validated_data.pop('billboards', [])
         instance.user = validated_data.get('user', instance.user)
         instance.is_accepted = validated_data.get('is_accepted', instance.is_accepted)
-        
-
-        # Update billboards
-        for billboard_data in billboards_data:
-            billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
-            instance.billboards.add(billboard)
-
-
+        if 'billboard' in validated_data:
+            instance.billboard = validated_data['billboard']
+        instance.save()
         return instance
