@@ -58,40 +58,6 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True},
         }
 
-
-
-
-class MonitoringSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    user_id = serializers.IntegerField(source='user.id', write_only=True)  # Accept user ID, but do not allow changes to it
-    billboard = serializers.UUIDField(source='billboard.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
-    class Meta:
-        model = Monitoring
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user']
-    def update(self, instance, validated_data):
-        # Don't allow changes to the billboard
-        # if logined user is not admin
-        if  instance.user.groups.filter(name='admin').exists():
-            instance.billboard = validated_data.get('billboard', instance.billboard)
-            instance.user = validated_data.get('user', validated_data['user_id'])
-        validated_data.pop('billboard', None) 
-        if not (instance.front and instance.left and instance.right and instance.close):
-            raise serializers.ValidationError("Please upload Images")
-        if instance.status is None:
-            raise serializers.ValidationError("Please select status")
-        instance.latitude = validated_data.get('latitude', instance.latitude)
-        instance.longitude = validated_data.get('longitude', instance.longitude)
-        instance.status = validated_data.get('status', instance.status)
-        instance.front = validated_data.get('front', instance.front)
-        instance.left = validated_data.get('left', instance.left)
-        instance.right = validated_data.get('right', instance.right)
-        instance.close = validated_data.get('close', instance.close)
-        instance.comment = validated_data.get('comment', instance.comment)
-        instance.save()
-
-        return instance
-
-        
 class BillboardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Billboard
@@ -99,6 +65,52 @@ class BillboardSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
         }
+
+
+class MonitoringSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    user_id = serializers.IntegerField(source='user.id', write_only=True)  # Accept user ID, but do not allow changes to it
+    billboard = serializers.UUIDField(source='billboard.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
+    billboard_detail = serializers.SerializerMethodField(read_only=True)
+    left = serializers.ImageField(required=False)
+    front = serializers.ImageField(required=False)
+    close = serializers.ImageField(required=False)
+    right = serializers.ImageField(required=False)
+    class Meta:
+        model = Monitoring
+        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail']
+        extra_kwargs = {
+            'user': {'required': False},
+            'billboard': {'required': False},
+        }
+    @extend_schema_field(BillboardSerializer)
+    def get_billboard_detail(self, obj):
+        return BillboardSerializer(obj.billboard).data
+    def update(self, instance, validated_data):
+        # Don't allow changes to the billboard
+        # if logined user is not admin
+        if  instance.user.groups.filter(name='admin').exists():
+            instance.billboard = validated_data.get('billboard', instance.billboard)
+            instance.user = validated_data.get('user', validated_data['user_id'])
+        validated_data.pop('billboard', None) 
+        if not (validated_data.get('front') or validated_data.get('left') or validated_data.get('right') or validated_data.get('close')):
+            raise serializers.ValidationError("Please upload Images")
+        if validated_data.get('status') is None:
+            raise serializers.ValidationError("Please select status")
+        instance.latitude = validated_data.get('latitude', instance.latitude)
+        instance.longitude = validated_data.get('longitude', instance.longitude)
+        instance.status = validated_data.get('status', instance.status)
+        for field in ['left', 'front', 'close', 'right']:
+            if field in validated_data:
+                file = validated_data.pop(field)
+                setattr(instance, field, file)
+        instance.comment = validated_data.get('comment', instance.comment)
+        instance.save()
+
+        return instance
+
+        
+
         
 class CampaignSerializer(serializers.ModelSerializer):
     billboards = BillboardSerializer(many=True, required=False)
@@ -120,10 +132,10 @@ class CampaignSerializer(serializers.ModelSerializer):
     @extend_schema_field(MonitoringSerializer(many=True))
     def get_all_monitorings(self, obj):
         monitorings = Monitoring.objects.filter(
-            created_at__date__gte=obj.start_date,
-           created_at__date__lte=obj.end_date,
-            created_at__time__gte=obj.start_at,
-            created_at__time__lte=obj.end_at
+            updated_at__date__gte=obj.start_date,
+           updated_at__date__lte=obj.end_date,
+            updated_at__time__gte=obj.start_at,
+            updated_at__time__lte=obj.end_at
         )
         return MonitoringSerializer(monitorings, many=True).data
     def create(self, validated_data):
@@ -178,12 +190,15 @@ class MonitoringRequestSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
             'billboards': {'required': False},
+            'is_accepeted': {'required': False}
+
         }
 
     @extend_schema_field(CustomBillboardSerializer)
     def get_billboard_detail(self, obj):
         billboard = obj.billboards 
         return {
+            'id':billboard.id,
             'uuid': billboard.uuid,
             'status': billboard.status,
             'title': billboard.title,
@@ -191,13 +206,20 @@ class MonitoringRequestSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = validated_data.pop('user', None)
-        billboard = validated_data.pop('billboard', None)
+        billboard = validated_data.pop('billboards', None)
         monitoring = MonitoringRequest.objects.create(user=user, billboard=billboard, **validated_data)
         return monitoring
 
     def update(self, instance, validated_data):
         instance.user = validated_data.get('user', instance.user)
-        instance.is_accepted = validated_data.get('is_accepted', instance.is_accepted)
+        new_status = validated_data.get('is_accepeted', instance.is_accepeted)
+        
+        if instance.is_accepeted != new_status and new_status == 'ACCEPTED':
+            Monitoring.objects.update_or_create(
+                user=instance.user,
+                billboard=validated_data.get('billboard', instance.billboards)
+            )
+        instance.is_accepeted = new_status
         if 'billboard' in validated_data:
             instance.billboard = validated_data['billboard']
         instance.save()

@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from phonenumber_field.modelfields import PhoneNumberField
 from api.services.constants import *
+from django.utils import timezone
 
 
 class Supervisor(models.Model):
@@ -67,19 +68,25 @@ class Monitoring(models.Model):
     right = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
     close = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True,editable=True)
+    updated_at = models.DateTimeField(auto_now=True,editable=True)
     def __str__(self):
         return str(self.uuid)
+    def save(self, *args, **kwargs):
+        self.updated_at = timezone.now()
+        super().save(*args, **kwargs)
     
 class MonitoringRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING,related_name='monitoring_requests')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     billboards = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='monitoring_requests',null=True, blank=True)
     is_accepeted = models.CharField(choices=TASK_CHOICES, default='PENDING')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True,editable=True)
+    updated_at = models.DateTimeField(default=timezone.now)
     campaign = models.ForeignKey('Campaign', on_delete=models.DO_NOTHING,related_name='monitoring_requests')
 
     def __str__(self):
         return str(self.uuid)
+    def save(self, *args, **kwargs):
+        self.updated_at = timezone.now()
+        super().save(*args, **kwargs)

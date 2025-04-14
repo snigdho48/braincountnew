@@ -39,6 +39,8 @@ class MonitoringRequestApiView(APIView):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
             if request.query_params.get('status'):
                 monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
+            if request.query_params.get('exclude'):
+                monitoring = monitoring.exclude(is_accepeted=request.query_params.get('exclude'))
 
             serializer = MonitoringRequestSerializer(monitoring, many=True)
             serializer_data = {
@@ -59,7 +61,8 @@ class MonitoringRequestApiView(APIView):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
             if request.query_params.get('status'):
                 monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
-
+            if request.query_params.get('exclude'):
+                monitoring = monitoring.exclude(is_accepeted=request.query_params.get('exclude'))
             serializer = MonitoringRequestSerializer(monitoring, many=True)
             serializer_data = {
                 "monitoring": serializer.data,
@@ -91,7 +94,7 @@ class MonitoringRequestApiView(APIView):
         tags=["Monitoring"],
     )
     def patch(self, request):
-        if request.user.groups.filter(name='admin').exists():
+        if request.user.groups.filter(name__in=['admin', 'supervisor']).exists():
             monitoring = get_object_or_404(MonitoringRequest, uuid=request.data['uuid'])
             serializer = MonitoringRequestSerializer(monitoring, data=request.data, partial=True)
             if serializer.is_valid():
@@ -100,6 +103,8 @@ class MonitoringRequestApiView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+        
+        
     @extend_schema(
         request=MonitoringRequestSerializer,
         responses={200: OpenApiResponse(description="Monitoring record deleted")},
