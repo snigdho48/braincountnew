@@ -69,10 +69,11 @@ class Monitoring(models.Model):
     close = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True,editable=True)
-    updated_at = models.DateTimeField(auto_now=True,editable=True)
+    updated_at = models.DateTimeField(default=timezone.now)
     def __str__(self):
         return str(self.uuid)
     def save(self, *args, **kwargs):
+
         self.updated_at = timezone.now()
         super().save(*args, **kwargs)
     
