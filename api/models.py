@@ -73,7 +73,16 @@ class Monitoring(models.Model):
     def __str__(self):
         return str(self.uuid)
     def save(self, *args, **kwargs):
-        self.updated_at = kwargs.pop('updated_at', timezone.now())
+        if self.pk:
+            # Fetch current value from DB
+            old = MonitoringRequest.objects.filter(pk=self.pk).only('updated_at').first()
+            if old and self.updated_at == old.updated_at:
+                # Only update if the field hasn't been manually modified
+                self.updated_at = timezone.now()
+        else:
+            # On create, always set it
+            self.updated_at = timezone.now()
+        
         super().save(*args, **kwargs)
     
 class MonitoringRequest(models.Model):
@@ -88,5 +97,14 @@ class MonitoringRequest(models.Model):
     def __str__(self):
         return str(self.uuid)
     def save(self, *args, **kwargs):
-        self.updated_at = kwargs.pop('updated_at', timezone.now())
+        if self.pk:
+            # Fetch current value from DB
+            old = MonitoringRequest.objects.filter(pk=self.pk).only('updated_at').first()
+            if old and self.updated_at == old.updated_at:
+                # Only update if the field hasn't been manually modified
+                self.updated_at = timezone.now()
+        else:
+            # On create, always set it
+            self.updated_at = timezone.now()
+        
         super().save(*args, **kwargs)
