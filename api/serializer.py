@@ -234,7 +234,7 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
         new_status = validated_data.get('is_accepeted', instance.is_accepeted)
         stuff =validated_data.get('stuff', None)
         if stuff is not None:
-            instance.stuff = Stuff.objects.get_object_or_404(uuid=c)
+            instance.stuff = Stuff.objects.get_object_or_404(uuid=validated_data.get('stuff', instance.stuff))
             
             
         
@@ -246,7 +246,8 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
                 end_date__gte=instance.created_at,
                 user=instance.user
             ).first()
-            for monitoring in range(int(campaign.monitor_time)):
+            for monitoring in range(0,int(campaign.monitor_time)):
+                
                 task=TaskSubmission.objects.create(
                     user=instance.user,
                     billboard=validated_data.get('billboard', instance.billboards),
