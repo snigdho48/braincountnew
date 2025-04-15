@@ -39,7 +39,7 @@ class BillboardApiView(APIView):
             serializer = BillboardSerializer(billboards, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
     @extend_schema(
         request=BillboardSerializer,
         responses={200: BillboardSerializer, 400: BillboardSerializer.errors},
@@ -55,7 +55,7 @@ class BillboardApiView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
     @extend_schema(
         request=BillboardSerializer,
         responses={200: BillboardSerializer, 400: BillboardSerializer.errors},
@@ -71,7 +71,7 @@ class BillboardApiView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
     @extend_schema(
         parameters=[
             OpenApiParameter(
@@ -101,4 +101,4 @@ class BillboardApiView(APIView):
             billboard.delete()
             return Response({"message": "Billboard deleted successfully"}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "You are not authorized to delete this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to delete this data"}, status=status.HTTP_401_UNAUTHORIZED)

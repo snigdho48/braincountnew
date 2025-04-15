@@ -92,7 +92,7 @@ class MonitoringView(APIView):
                 serializer = MonitoringSerializer(monitoring, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
         
     @extend_schema(
     request=MonitoringSerializer,
@@ -103,7 +103,7 @@ class MonitoringView(APIView):
     def patch(self, request):
         # Ensure permission check for 'supervisor' and 'admin' groups
         if not request.user.groups.filter(name__in=['supervisor', 'admin']).exists():
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
         
         # Get the UUID from request data
         uuid = request.data.get('uuid', None)
@@ -147,7 +147,7 @@ class MonitoringViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, pk=None):
         # Ensure permission check for 'supervisor' and 'admin' groups
         if not request.user.groups.filter(name__in=['supervisor', 'admin']).exists():
-            return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Retrieve the Monitoring object by UUID
         uuid = request.data.get('uuid')

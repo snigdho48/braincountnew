@@ -73,7 +73,7 @@ class MonitoringRequestApiView(APIView):
             return Response(serializer_data, status=status.HTTP_200_OK)
 
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
 
     @extend_schema(
         request=MonitoringRequestSerializer,
@@ -102,7 +102,7 @@ class MonitoringRequestApiView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
         
         
     @extend_schema(
@@ -117,7 +117,7 @@ class MonitoringRequestApiView(APIView):
             monitoring.delete()
             return Response({"message": "Monitoring record deleted"}, status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
         
 class MonitoringRequestStatus(APIView):
     authentication_classes = [JWTAuthentication]

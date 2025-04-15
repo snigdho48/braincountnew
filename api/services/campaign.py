@@ -44,7 +44,7 @@ class CampaignApiView(APIView):
             serializer = CampaignSerializer(campaigns, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
     @extend_schema(
         request=CampaignSerializer,
         responses={200: CampaignSerializer, 400: CampaignSerializer.errors},
@@ -72,7 +72,7 @@ class CampaignApiView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
     @extend_schema(
         request=CampaignSerializer,
         responses={200: CampaignSerializer, 400: CampaignSerializer.errors},
@@ -85,4 +85,4 @@ class CampaignApiView(APIView):
             campaign.delete()
             return Response({"message": "Campaign deleted successfully"}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
