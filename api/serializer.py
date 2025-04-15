@@ -246,8 +246,8 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
                 end_date__gte=instance.created_at,
                 user=instance.user
             ).first()
-            for monitoring in campaign.monitor_time:
-                task=TaskSubmission.objects.create_or_update(
+            for monitoring in range(int(campaign.monitor_time)):
+                task=TaskSubmission.objects.create(
                     user=instance.user,
                     billboard=validated_data.get('billboard', instance.billboards),
                 )
