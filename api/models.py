@@ -73,8 +73,7 @@ class Monitoring(models.Model):
     def __str__(self):
         return str(self.uuid)
     def save(self, *args, **kwargs):
-
-        self.updated_at = timezone.now()
+        self.updated_at = kwargs.pop('updated_at', timezone.now())
         super().save(*args, **kwargs)
     
 class MonitoringRequest(models.Model):
@@ -89,5 +88,5 @@ class MonitoringRequest(models.Model):
     def __str__(self):
         return str(self.uuid)
     def save(self, *args, **kwargs):
-        self.updated_at = timezone.now()
+        self.updated_at = kwargs.pop('updated_at', timezone.now())
         super().save(*args, **kwargs)
