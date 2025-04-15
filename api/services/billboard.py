@@ -33,7 +33,7 @@ class BillboardApiView(APIView):
             serializer = BillboardSerializer(billboards, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.user.groups.filter(name='supervisor').exists():
-            billboards = Billboard.objects.filter(user=request.user)
+            billboards = Billboard.objects.all()
             if request.query_params.get('uuid'):
                 billboards = billboards.filter(uuid=request.query_params.get('uuid'))
             serializer = BillboardSerializer(billboards, many=True)

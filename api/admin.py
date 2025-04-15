@@ -7,10 +7,10 @@ admin.site.index_title = "Welcome to BrainCount Admin Portal"
 
 from api.models import *
 
-admin.site.register(Supervisor)
+admin.site.register(Monitor)
 admin.site.register(Billboard)
-admin.site.register(Monitoring)
+admin.site.register(TaskSubmission)
 admin.site.register(Campaign)
-admin.site.register(MonitoringRequest)
+admin.site.register(TaskSubmissionRequest)
 
 # Register your models here.

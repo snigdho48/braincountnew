@@ -15,10 +15,10 @@ BILLBORD_TYPES = (
 )
 
 MONITOR_TIME = (
-    ('1time', '1 time in 30days'),
-    ('2times', '2 time in 30days'),
-    ('3time', '3 time in 30days'),
-     ('4time', '4 time in 30days'),
+    ('1', '1'),
+    ('2', '2'),
+    ('3', '3'),
+     ('3', '4'),
 ) 
 
 TASK_CHOICES = (
@@ -27,4 +27,17 @@ TASK_CHOICES = (
     ('PENDING','PENDING'),
     
     
+)
+BILLBORD_FACES = (
+    ('1', '1'),
+    ('2', '2'),
+    ('3', '3'),
+    ('4', '4'),
+)
+
+CAMPAIGN_TYPE = (
+    ('Analytics', 'Analytics'),
+    
+    ('Monitoring', 'Monitoring'),
+    ('Basic', 'Basic'),
 )

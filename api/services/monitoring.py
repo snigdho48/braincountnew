@@ -1,6 +1,6 @@
 
-from api.models import Monitoring,BILLBOARD_STATUS,MonitoringRequest
-from api.serializer import MonitoringSerializer
+from api.models import TaskSubmission,BILLBOARD_STATUS,TaskSubmissionRequest
+from api.serializer import TaskSubmissionSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 import base64
@@ -57,10 +57,10 @@ class MonitoringView(APIView):
 
     
     @extend_schema(
-        request=MonitoringSerializer,
-        responses={200: MonitoringSerializer , 400: MonitoringSerializer.errors},
+        request=TaskSubmissionSerializer,
+        responses={200: TaskSubmissionSerializer , 400: TaskSubmissionSerializer.errors},
         description="Get and create monitoring records",
-        tags=["Monitoring"],
+        tags=["TaskSubmission"],
         parameters=[
             OpenApiParameter(name='uuid', type=uuid.UUID, description="ID of the monitoring record"),
             OpenApiParameter(name='request_uuid', type=uuid.UUID, description="ID of the monitoring request"),
@@ -68,37 +68,37 @@ class MonitoringView(APIView):
     )
     def get(self, request):
         if request.user.groups.filter(name='admin').exists():
-            monitoring = Monitoring.objects.all()
-            serializer = MonitoringSerializer(monitoring, many=True)
+            monitoring = TaskSubmission.objects.all()
+            serializer = TaskSubmissionSerializer(monitoring, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.user.groups.filter(name='supervisor').exists():
-            monitoring = Monitoring.objects.filter(user=request.user)
+            monitoring = TaskSubmission.objects.filter(user=request.user)
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
                 if not monitoring.exists():
-                    return Response({"error": "Monitoring record not found"}, status=status.HTTP_404_NOT_FOUND)
+                    return Response({"error": "TaskSubmission record not found"}, status=status.HTTP_404_NOT_FOUND)
                 else:
                     monitoring = monitoring.first()
-                    serializer = MonitoringSerializer(monitoring)
+                    serializer = TaskSubmissionSerializer(monitoring)
                     return Response(serializer.data, status=status.HTTP_200_OK)
             elif request.query_params.get('request_uuid'):
-                monitoring_request = get_object_or_404(MonitoringRequest, uuid=request.query_params.get('request_uuid'))
+                monitoring_request = get_object_or_404(TaskSubmissionRequest, uuid=request.query_params.get('request_uuid'))
                 monitoring = monitoring.filter(billboard=monitoring_request.billboards, user=monitoring_request.user).order_by('-created_at')
                 if not monitoring.exists():
-                    return Response({"error": "Monitoring record not found"}, status=status.HTTP_404_NOT_FOUND)
-                serializer = MonitoringSerializer(monitoring, many=True)
+                    return Response({"error": "TaskSubmission record not found"}, status=status.HTTP_404_NOT_FOUND)
+                serializer = TaskSubmissionSerializer(monitoring, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                serializer = MonitoringSerializer(monitoring, many=True)
+                serializer = TaskSubmissionSerializer(monitoring, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
         
     @extend_schema(
-    request=MonitoringSerializer,
-    responses={200: MonitoringSerializer, 400: MonitoringSerializer.errors},
+    request=TaskSubmissionSerializer,
+    responses={200: TaskSubmissionSerializer, 400: TaskSubmissionSerializer.errors},
     description="Update a monitoring record",
-    tags=["Monitoring"],
+    tags=["TaskSubmission"],
     )
     def patch(self, request):
         # Ensure permission check for 'supervisor' and 'admin' groups
@@ -113,10 +113,10 @@ class MonitoringView(APIView):
             return Response({"error": "UUID is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Get the Monitoring object by UUID
-            monitoring = Monitoring.objects.get(uuid=uuid)
-        except Monitoring.DoesNotExist:
-            return Response({"error": "Monitoring object not found"}, status=status.HTTP_404_NOT_FOUND)
+            # Get the TaskSubmission object by UUID
+            monitoring = TaskSubmission.objects.get(uuid=uuid)
+        except TaskSubmission.DoesNotExist:
+            return Response({"error": "TaskSubmission object not found"}, status=status.HTTP_404_NOT_FOUND)
 
         # Make request.data mutable and add user_id
         data = request.data.copy()
@@ -130,7 +130,7 @@ class MonitoringView(APIView):
         data['uuid'] = str(monitoring.uuid)
 
         # Initialize the serializer with partial update
-        serializer = MonitoringSerializer(monitoring, data=data, partial=True)
+        serializer = TaskSubmissionSerializer(monitoring, data=data, partial=True)
 
         if serializer.is_valid():
             # Save the updated monitoring object
@@ -139,36 +139,3 @@ class MonitoringView(APIView):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class MonitoringViewSet(viewsets.ModelViewSet):
-    queryset = Monitoring.objects.all()
-    serializer_class = MonitoringSerializer
-    parser_classes = [MultiPartParser, FormParser]
-
-    def partial_update(self, request, pk=None):
-        # Ensure permission check for 'supervisor' and 'admin' groups
-        if not request.user.groups.filter(name__in=['supervisor', 'admin']).exists():
-            return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # Retrieve the Monitoring object by UUID
-        uuid = request.data.get('uuid')
-        if not uuid:
-            return Response({"error": "UUID is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            monitoring = Monitoring.objects.get(uuid=uuid)
-        except Monitoring.DoesNotExist:
-            return Response({"error": "Monitoring object not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Prepare data for serialization
-        data = request.data.copy()
-        data['user_id'] = request.user.id if not request.user.groups.filter(name='admin').exists() else data.get('user_id')
-        data['billboard'] = str(monitoring.billboard.uuid)
-        data['uuid'] = str(monitoring.uuid)
-
-        # Initialize the serializer with partial=True to allow partial updates
-        serializer = self.get_serializer(monitoring, data=data, partial=True)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

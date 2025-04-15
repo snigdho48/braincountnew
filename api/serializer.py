@@ -65,9 +65,27 @@ class BillboardSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
         }
+        
+class StuffSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = Stuff
+        fields = '__all__'
+        extra_kwargs = {
+            'user': {'required': False},
+        }
+
+class AdvertiserSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = Advertiser
+        fields = '__all__'
+        extra_kwargs = {
+            'user': {'required': False},
+        }
 
 
-class MonitoringSerializer(serializers.ModelSerializer):
+class TaskSubmissionSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     user_id = serializers.IntegerField(source='user.id', write_only=True)  # Accept user ID, but do not allow changes to it
     billboard = serializers.UUIDField(source='billboard.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
@@ -77,7 +95,7 @@ class MonitoringSerializer(serializers.ModelSerializer):
     close = serializers.ImageField(required=False)
     right = serializers.ImageField(required=False)
     class Meta:
-        model = Monitoring
+        model = TaskSubmission
         fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail']
         extra_kwargs = {
             'user': {'required': False},
@@ -129,21 +147,19 @@ class CampaignSerializer(serializers.ModelSerializer):
             'user': {'required': False},
             'billboard': {'required': False},
         }
-    @extend_schema_field(MonitoringSerializer(many=True))
+    @extend_schema_field(TaskSubmissionSerializer(many=True))
     def get_all_monitorings(self, obj):
-        monitorings = Monitoring.objects.filter(
-            updated_at__date__gte=obj.start_date,
-           updated_at__date__lte=obj.end_date,
-            updated_at__time__gte=obj.start_at,
-            updated_at__time__lte=obj.end_at
+        task =TaskSubmissionRequest.objects.filter(
+            campaign=obj,
         )
-        return MonitoringSerializer(monitorings, many=True).data
+        tasksubmission = [t for task in task for t in task.task_list.all()]
+        return TaskSubmissionSerializer(tasksubmission, many=True).data
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboards', [])
         campaign = Campaign.objects.create(**validated_data)
         for billboard_data in billboards_data:
             billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
-            monitoring_request = MonitoringRequest.objects.create(
+            monitoring_request = TaskSubmissionRequest.objects.create(
                 user=validated_data.get('user'),
                 billboard=billboard,
                 campaign=campaign,
@@ -169,7 +185,7 @@ class CampaignSerializer(serializers.ModelSerializer):
             billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
             instance.billboards.add(billboard)
         for monitoring_request_data in monitoring_requests_data:
-            monitoring_request = MonitoringRequest.objects.create(**monitoring_request_data)
+            monitoring_request = TaskSubmissionRequest.objects.create(**monitoring_request_data)
             instance.monitoring_requests.add(monitoring_request)
 
         return instance
@@ -177,15 +193,17 @@ class CustomBillboardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Billboard
         fields = ['uuid',  'status', 'title', 'location', 'billboard_type']
-class MonitoringRequestSerializer(serializers.ModelSerializer):
+class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     user_detail = UserSerializer(read_only=True)
 
     billboards = serializers.PrimaryKeyRelatedField(queryset=Billboard.objects.all(), write_only=True)
     billboard_detail = serializers.SerializerMethodField(read_only=True)
-
+    stuff = serializers.UUIDField(source='stuff.uuid', write_only=True)  
+    stuff_detail = StuffSerializer(read_only=True)
+    task_list = TaskSubmissionSerializer(many=True, read_only=True)
     class Meta:
-        model = MonitoringRequest
+        model = TaskSubmissionRequest
         fields = '__all__'
         extra_kwargs = {
             'user': {'required': False},
@@ -193,6 +211,7 @@ class MonitoringRequestSerializer(serializers.ModelSerializer):
             'is_accepeted': {'required': False}
 
         }
+
 
     @extend_schema_field(CustomBillboardSerializer)
     def get_billboard_detail(self, obj):
@@ -207,18 +226,34 @@ class MonitoringRequestSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = validated_data.pop('user', None)
         billboard = validated_data.pop('billboards', None)
-        monitoring = MonitoringRequest.objects.create(user=user, billboard=billboard, **validated_data)
+        monitoring = TaskSubmissionRequest.objects.create(user=user, billboard=billboard, **validated_data)
         return monitoring
 
     def update(self, instance, validated_data):
         instance.user = validated_data.get('user', instance.user)
         new_status = validated_data.get('is_accepeted', instance.is_accepeted)
+        stuff =validated_data.get('stuff', None)
+        if stuff is not None:
+            instance.stuff = Stuff.objects.get_object_or_404(uuid=c)
+            
+            
         
         if instance.is_accepeted != new_status and new_status == 'ACCEPTED':
-            Monitoring.objects.update_or_create(
-                user=instance.user,
-                billboard=validated_data.get('billboard', instance.billboards)
-            )
+         
+            campaign=Campaign.objects.filter(
+                billboards=validated_data.get('billboard', instance.billboards),
+                start_date__lte=instance.created_at,
+                end_date__gte=instance.created_at,
+                user=instance.user
+            ).first()
+            for monitoring in campaign.monitor_time:
+                task=TaskSubmission.objects.create_or_update(
+                    user=instance.user,
+                    billboard=validated_data.get('billboard', instance.billboards),
+                )
+                instance.task_list.add(task)
+
+
         instance.is_accepeted = new_status
         if 'billboard' in validated_data:
             instance.billboard = validated_data['billboard']

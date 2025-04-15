@@ -1,5 +1,5 @@
 
-from api.models import MonitoringRequest
+from api.models import TaskSubmissionRequest
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 import base64
@@ -10,7 +10,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
 import uuid
-from api.serializer import MonitoringRequestSerializer
+from api.serializer import TaskSubmissionSerializer,TaskSubmissionRequestSerializer
 from api.services.constants import TASK_CHOICES
 
 
@@ -19,10 +19,10 @@ class MonitoringRequestApiView(APIView):
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
-        request=MonitoringRequestSerializer,
-        responses={200: MonitoringRequestSerializer, 400: MonitoringRequestSerializer.errors},
+        request=TaskSubmissionRequestSerializer,
+        responses={200: TaskSubmissionRequestSerializer, 400: TaskSubmissionRequestSerializer.errors},
         description="Get and create monitoring records",
-        tags=["Monitoring"],
+        tags=["TaskSubmission"],
         parameters=[
             OpenApiParameter(name='uuid', type=uuid.UUID, description="ID of the monitoring record"),
             OpenApiParameter(name='status', type=str, description="Status of the monitoring record"),
@@ -30,9 +30,9 @@ class MonitoringRequestApiView(APIView):
     )
     def get(self, request):
         if request.user.groups.filter(name='admin').exists():
-            monitoring = MonitoringRequest.objects.all()
-            pending = MonitoringRequest.objects.filter(is_accepeted='PENDING').count()
-            accepted = MonitoringRequest.objects.filter(is_accepeted='ACCEPTED').count()
+            monitoring = TaskSubmissionRequest.objects.all()
+            pending = TaskSubmissionRequest.objects.filter(is_accepeted='PENDING').count()
+            accepted = TaskSubmissionRequest.objects.filter(is_accepeted='ACCEPTED').count()
             all_task = monitoring.count()
 
             if request.query_params.get('uuid'):
@@ -42,7 +42,7 @@ class MonitoringRequestApiView(APIView):
             if request.query_params.get('exclude'):
                 monitoring = monitoring.exclude(is_accepeted=request.query_params.get('exclude'))
 
-            serializer = MonitoringRequestSerializer(monitoring, many=True)
+            serializer = TaskSubmissionRequestSerializer(monitoring, many=True)
             serializer_data = {
                 "monitoring": serializer.data,
                 "pending": pending,
@@ -52,7 +52,7 @@ class MonitoringRequestApiView(APIView):
             return Response(serializer_data, status=status.HTTP_200_OK)
 
         elif request.user.groups.filter(name='supervisor').exists():
-            monitoring = MonitoringRequest.objects.filter(user=request.user)
+            monitoring = TaskSubmissionRequest.objects.filter(user=request.user)
             pending = monitoring.filter(is_accepeted='PENDING').count()
             accepted = monitoring.filter(is_accepeted='ACCEPTED').count()
             all_task = monitoring.count()
@@ -63,7 +63,7 @@ class MonitoringRequestApiView(APIView):
                 monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
             if request.query_params.get('exclude'):
                 monitoring = monitoring.exclude(is_accepeted=request.query_params.get('exclude'))
-            serializer = MonitoringRequestSerializer(monitoring, many=True)
+            serializer = TaskSubmissionRequestSerializer(monitoring, many=True)
             serializer_data = {
                 "monitoring": serializer.data,
                 "pending": pending,
@@ -76,27 +76,27 @@ class MonitoringRequestApiView(APIView):
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
 
     @extend_schema(
-        request=MonitoringRequestSerializer,
-        responses={200: MonitoringRequestSerializer, 400: MonitoringRequestSerializer.errors},
+        request=TaskSubmissionRequestSerializer,
+        responses={200: TaskSubmissionRequestSerializer, 400: TaskSubmissionRequestSerializer.errors},
         description="Create a new monitoring record",
-        tags=["Monitoring"],
+        tags=["TaskSubmission"],
     )
     def post(self, request):
-        serializer = MonitoringRequestSerializer(data=request.data)
+        serializer = TaskSubmissionRequestSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     @extend_schema(
-        request=MonitoringRequestSerializer,
-        responses={200: MonitoringRequestSerializer, 400: MonitoringRequestSerializer.errors},
+        request=TaskSubmissionRequestSerializer,
+        responses={200: TaskSubmissionRequestSerializer, 400: TaskSubmissionRequestSerializer.errors},
         description="Update a monitoring record",
-        tags=["Monitoring"],
+        tags=["TaskSubmission"],
     )
     def patch(self, request):
         if request.user.groups.filter(name__in=['admin', 'supervisor']).exists():
-            monitoring = get_object_or_404(MonitoringRequest, uuid=request.data['uuid'])
-            serializer = MonitoringRequestSerializer(monitoring, data=request.data, partial=True)
+            monitoring = get_object_or_404(TaskSubmissionRequest, uuid=request.data['uuid'])
+            serializer = TaskSubmissionRequestSerializer(monitoring, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -106,16 +106,16 @@ class MonitoringRequestApiView(APIView):
         
         
     @extend_schema(
-        request=MonitoringRequestSerializer,
-        responses={200: OpenApiResponse(description="Monitoring record deleted")},
+        request=TaskSubmissionRequestSerializer,
+        responses={200: OpenApiResponse(description="TaskSubmission record deleted")},
         description="Delete a monitoring record",
-        tags=["Monitoring"],
+        tags=["TaskSubmission"],
     )
     def delete(self, request):
         if request.user.groups.filter(name='admin').exists():
-            monitoring = get_object_or_404(MonitoringRequest, uuid=request.data['uuid'])
+            monitoring = get_object_or_404(TaskSubmissionRequest, uuid=request.data['uuid'])
             monitoring.delete()
-            return Response({"message": "Monitoring record deleted"}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"message": "TaskSubmission record deleted"}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
         
