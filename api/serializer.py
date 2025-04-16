@@ -4,6 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 
 
 
@@ -128,7 +129,11 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         return instance
 
         
-
+class CardDataSerializer(serializers.Serializer):
+    visited = serializers.IntegerField()
+    billboards = serializers.IntegerField()
+    Good = serializers.IntegerField()
+    Bad = serializers.IntegerField()
         
 class CampaignSerializer(serializers.ModelSerializer):
     billboards = BillboardSerializer(many=True, required=False)
@@ -139,6 +144,9 @@ class CampaignSerializer(serializers.ModelSerializer):
         child=serializers.UUIDField(), write_only=True
     )
     all_monitorings = serializers.SerializerMethodField()
+    # no billboard, billboard visited,
+    card_data= serializers.SerializerMethodField()
+    
 
     class Meta:
         model = Campaign
@@ -147,6 +155,31 @@ class CampaignSerializer(serializers.ModelSerializer):
             'user': {'required': False},
             'billboard': {'required': False},
         }
+    @extend_schema_field(CardDataSerializer)
+    def get_card_data(self, obj):
+        task_requests = TaskSubmissionRequest.objects.filter(campaign=obj)
+        visited = 0
+        good = 0
+
+        for task_request in task_requests:
+            task_list = task_request.task_list.all()
+            if task_list.filter(status__isnull=False).exists():
+                visited += 1
+
+            latest_task = task_list.order_by('-updated_at').first()
+            if latest_task and latest_task.status == 'Good':
+                good += 1
+
+        billboards_count = obj.billboards.count()
+
+        return {
+            'visited': visited,
+            'billboards': billboards_count,
+            'Good': good,
+            'Bad': billboards_count - good
+        }
+            
+
     @extend_schema_field(TaskSubmissionSerializer(many=True))
     def get_all_monitorings(self, obj):
         task =TaskSubmissionRequest.objects.filter(
@@ -154,6 +187,7 @@ class CampaignSerializer(serializers.ModelSerializer):
         )
         tasksubmission = [t for task in task for t in task.task_list.all()]
         return TaskSubmissionSerializer(tasksubmission, many=True).data
+
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboards', [])
         campaign = Campaign.objects.create(**validated_data)
