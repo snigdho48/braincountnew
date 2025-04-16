@@ -4,7 +4,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema_field
-from drf_spectacular.types import OpenApiTypes
 
 
 
@@ -128,12 +127,12 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
 
         return instance
 
-        
 class CardDataSerializer(serializers.Serializer):
     visited = serializers.IntegerField()
     billboards = serializers.IntegerField()
     Good = serializers.IntegerField()
     Bad = serializers.IntegerField()
+
         
 class CampaignSerializer(serializers.ModelSerializer):
     billboards = BillboardSerializer(many=True, required=False)
@@ -157,27 +156,20 @@ class CampaignSerializer(serializers.ModelSerializer):
         }
     @extend_schema_field(CardDataSerializer)
     def get_card_data(self, obj):
-        task_requests = TaskSubmissionRequest.objects.filter(campaign=obj)
-        visited = 0
-        good = 0
+        task =TaskSubmissionRequest.objects.filter(
+            campaign=obj,
+        )
+        visited=0
+        good =0
+        for i in task:
+            if i.task_list.filter(status__isnull=False).exists():
+                visited +=1
+            if i.billboards.status== 'Good':
+                good +=1
 
-        for task_request in task_requests:
-            task_list = task_request.task_list.all()
-            if task_list.filter(status__isnull=False).exists():
-                visited += 1
-
-            latest_task = task_list.order_by('-updated_at').first()
-            if latest_task and latest_task.status == 'Good':
-                good += 1
-
-        billboards_count = obj.billboards.count()
-
-        return {
-            'visited': visited,
-            'billboards': billboards_count,
-            'Good': good,
-            'Bad': billboards_count - good
-        }
+        billboards = obj.billboards.all().count()
+        
+        return {'visited':visited,'billboards':billboards,'Good':good,'Bad':billboards-good}
             
 
     @extend_schema_field(TaskSubmissionSerializer(many=True))
