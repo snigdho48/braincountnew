@@ -3,6 +3,7 @@ attrs==25.3.0
 Django==5.2
 django-cors-headers==4.7.0
 django-filter==25.1
+django-multiselectfield==0.1.13
 django-phonenumber-field==8.0.0
 djangorestframework==3.16.0
 djangorestframework_simplejwt==5.5.0
@@ -20,5 +21,6 @@ PyYAML==6.0.2
 referencing==0.36.2
 rpds-py==0.24.0
 sqlparse==0.5.3
+tzdata==2025.2
 uritemplate==4.1.1
 uuid==1.30

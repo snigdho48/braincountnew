@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from phonenumber_field.modelfields import PhoneNumberField
 from api.services.constants import *
 from django.utils import timezone
+from multiselectfield import MultiSelectField
 
 
 class Monitor(models.Model):
@@ -83,7 +84,7 @@ class TaskSubmission(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=BILLBOARD_STATUS,null=True, blank=True)
+    status =   MultiSelectField(choices=BILLBOARD_STATUS, max_length=100, null=True, blank=True)
     billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='monitoring')
     front = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
     left = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
@@ -92,6 +93,7 @@ class TaskSubmission(models.Model):
     comment = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True,editable=True)
     updated_at = models.DateTimeField(default=timezone.now)
+    extra_images = models.ManyToManyField('TaskSubmissionExtraImages', related_name='task_submissions', blank=True,null=True)
 
     def __str__(self):
         return str(self.uuid)
@@ -131,3 +133,10 @@ class TaskSubmissionRequest(models.Model):
             # On create, always set it
             self.updated_at = timezone.now()
         super().save(*args, **kwargs)
+        
+class TaskSubmissionExtraImages(models.Model):
+    task_submission = models.ForeignKey('TaskSubmission', on_delete=models.CASCADE,related_name='extra_images_task_submission')
+    image = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+

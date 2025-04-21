@@ -104,10 +104,8 @@ class MonitoringView(APIView):
         # Ensure permission check for 'supervisor' and 'admin' groups
         if not request.user.groups.filter(name__in=['supervisor', 'admin']).exists():
             return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
-        
         # Get the UUID from request data
         uuid = request.data.get('uuid', None)
-        print(request.FILES)  # Debugging output to inspect incoming request data
         
         if not uuid:
             return Response({"error": "UUID is required"}, status=status.HTTP_400_BAD_REQUEST)
