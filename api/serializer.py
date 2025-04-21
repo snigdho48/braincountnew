@@ -83,7 +83,17 @@ class AdvertiserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
         }
+class TaskSubmissionExtraImagesSerializer(serializers.ModelSerializer):
+    task_submission = serializers.UUIDField(source='task_submission.uuid', required=False,write_only=True)  # Accept UUID of the billboard, but do not allow changes to it
+    class Meta:
+        model = TaskSubmissionExtraImages
+        fields = ['image', 'task_submission']
 
+
+class TaskSubmissionExtraImagesSerializerDisplay(serializers.ModelSerializer):
+    class Meta:
+        model = TaskSubmissionExtraImages
+        fields = ['image']
 
 class TaskSubmissionSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -94,9 +104,18 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     front = serializers.ImageField(required=False)
     close = serializers.ImageField(required=False)
     right = serializers.ImageField(required=False)
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=BILLBOARD_STATUS),
+        allow_empty=False,
+    )
+    extra_images = serializers.ListField(
+        child=serializers.ImageField(), required=False, write_only=True
+    )
+    extra_images_list = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = TaskSubmission
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail']
+        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list']
         extra_kwargs = {
             'user': {'required': False},
             'billboard': {'required': False},
@@ -104,6 +123,13 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     @extend_schema_field(BillboardSerializer)
     def get_billboard_detail(self, obj):
         return BillboardSerializer(obj.billboard).data
+    
+    @extend_schema_field(TaskSubmissionExtraImagesSerializerDisplay(many=True))
+    def get_extra_images_list(self, obj):
+        extra_images = obj.extra_images.all()
+        return TaskSubmissionExtraImagesSerializerDisplay(extra_images, many=True).data
+        
+    
     def update(self, instance, validated_data):
         # Don't allow changes to the billboard
         # if logined user is not admin
@@ -118,6 +144,15 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.status = validated_data.get('status', instance.status)
+        extra_images = validated_data.get('extra_images', None)
+        if extra_images:
+            for image in extra_images:
+                extra_image = TaskSubmissionExtraImages.objects.create(
+                    task_submission=instance,  # not instance.uuid
+                    image=image
+                )
+                instance.extra_images.add(extra_image)
+
         for field in ['left', 'front', 'close', 'right']:
             if field in validated_data:
                 file = validated_data.pop(field)
@@ -164,6 +199,7 @@ class CampaignSerializer(serializers.ModelSerializer):
         for i in task:
             if i.task_list.filter(status__isnull=False).exists():
                 visited +=1
+            print(i.billboards.status)
             if i.billboards.status== 'Good':
                 good +=1
 

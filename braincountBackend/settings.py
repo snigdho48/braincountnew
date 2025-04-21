@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'drf_spectacular_sidecar',
     'django_filters',
     'phonenumber_field',
+    'multiselectfield',
     
 ]
 
