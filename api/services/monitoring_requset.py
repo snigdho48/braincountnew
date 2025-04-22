@@ -55,6 +55,7 @@ class MonitoringRequestApiView(APIView):
             monitoring = TaskSubmissionRequest.objects.filter(user=request.user)
             pending = monitoring.filter(is_accepeted='PENDING').count()
             accepted = monitoring.filter(is_accepeted='ACCEPTED').count()
+            completed = monitoring.filter(is_accepeted='COMPLETED').count()
             all_task = monitoring.count()
 
             if request.query_params.get('uuid'):
@@ -68,6 +69,7 @@ class MonitoringRequestApiView(APIView):
                 "monitoring": serializer.data,
                 "pending": pending,
                 "accepted": accepted,
+                'completed': completed,
                 "all_task": all_task
             }
             return Response(serializer_data, status=status.HTTP_200_OK)

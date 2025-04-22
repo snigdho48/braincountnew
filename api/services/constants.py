@@ -25,6 +25,7 @@ TASK_CHOICES = (
     ('ACCEPTED','ACCEPTED'),
     ('REJECTED','REJECTED'),
     ('PENDING','PENDING'),
+    ('COMPLETED','COMPLETED'),
     
     
 )
