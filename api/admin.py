@@ -12,5 +12,6 @@ admin.site.register(Billboard)
 admin.site.register(TaskSubmission)
 admin.site.register(Campaign)
 admin.site.register(TaskSubmissionRequest)
+admin.site.register(TaskSubmissionExtraImages)
 
 # Register your models here.

@@ -127,7 +127,7 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     @extend_schema_field(TaskSubmissionExtraImagesSerializerDisplay(many=True))
     def get_extra_images_list(self, obj):
         extra_images = obj.extra_images.all()
-        return TaskSubmissionExtraImagesSerializerDisplay(extra_images, many=True).data
+        return [ img['image'] for img in TaskSubmissionExtraImagesSerializerDisplay(extra_images,many=True).data]
         
     
     def update(self, instance, validated_data):
@@ -145,6 +145,7 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.status = validated_data.get('status', instance.status)
         extra_images = validated_data.get('extra_images', None)
+        print(extra_images)
         if extra_images:
             for image in extra_images:
                 extra_image = TaskSubmissionExtraImages.objects.create(

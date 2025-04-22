@@ -136,7 +136,10 @@ class TaskSubmissionRequest(models.Model):
         
 class TaskSubmissionExtraImages(models.Model):
     task_submission = models.ForeignKey('TaskSubmission', on_delete=models.CASCADE,related_name='extra_images_task_submission')
-    image = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
+    image = models.ImageField(upload_to='billboard_images/monitoring_extra/',null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return str(self.image.name + " - " + str(self.task_submission.uuid))
 
 
