@@ -191,17 +191,18 @@ class CampaignSerializer(serializers.ModelSerializer):
         }
     @extend_schema_field(CardDataSerializer)
     def get_card_data(self, obj):
-        task =TaskSubmissionRequest.objects.filter(
+        task_requests =TaskSubmissionRequest.objects.filter(
             campaign=obj,
         )
         visited=0
         good =0
-        for i in task:
-            if i.task_list.filter(status__isnull=False).exists():
-                visited +=1
-            print(i.billboards.status)
-            if i.billboards.status== 'Good':
-                good +=1
+        for task_request in task_requests:
+            print(task_request.billboards)
+            if task_request.task_list.filter(status__isnull=False).exists():
+                visited += 1
+        for billboard in obj.billboards.all():
+            if billboard.status== 'Good':
+                good += 1
 
         billboards = obj.billboards.all().count()
         
