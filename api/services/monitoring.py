@@ -1,6 +1,6 @@
 
 from api.models import TaskSubmission,BILLBOARD_STATUS,TaskSubmissionRequest
-from api.serializer import TaskSubmissionSerializer
+from api.serializer import TaskSubmissionSerializer,TaskReSubmissionSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 import base64
@@ -13,7 +13,6 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiRespons
 import uuid
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from rest_framework import viewsets
 
 
 
@@ -64,15 +63,19 @@ class MonitoringView(APIView):
         parameters=[
             OpenApiParameter(name='uuid', type=uuid.UUID, description="ID of the monitoring record"),
             OpenApiParameter(name='request_uuid', type=uuid.UUID, description="ID of the monitoring request"),
+            OpenApiParameter(name='approval_status', type=str, description="Approval status of the monitoring record"),
         ],
     )
     def get(self, request):
         if request.user.groups.filter(name='admin').exists():
-            monitoring = TaskSubmission.objects.all()
+            monitoring = TaskSubmission.objects.all().order_by('-updated_at')
             serializer = TaskSubmissionSerializer(monitoring, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.user.groups.filter(name='supervisor').exists():
-            monitoring = TaskSubmission.objects.filter(user=request.user)
+            monitoring = TaskSubmission.objects.filter(user=request.user).order_by('-updated_at')
+            approval_status = request.query_params.get('approval_status',None)
+            if approval_status:
+                monitoring = monitoring.filter(approval_status=approval_status).order_by('-updated_at')
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
                 if not monitoring.exists():
@@ -139,6 +142,42 @@ class MonitoringView(APIView):
             # Save the updated monitoring object
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+    def post(self, request):
+        # Ensure permission check for 'supervisor' and 'admin' groups
+        if not request.user.groups.filter(name__in=['supervisor', 'admin']).exists():
+            return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Make request.data mutable and add user_id
+        data = request.data.copy()
+        if request.user.groups.filter(name='admin').exists():
+            data['user_id'] = data.get('user_id')
+        else:
+            data['user_id'] = request.user.id
+
+        # Initialize the serializer with partial update
+        uuid_list = data.pop('uuid', None)
+        if isinstance(uuid_list, list):
+            uuid = uuid_list[0]
+        else:
+            uuid = uuid_list
+        serializer = TaskReSubmissionSerializer(data=data)
+        
+        
+        if serializer.is_valid():
+            # Save the updated monitoring object
+            task = TaskSubmission.objects.filter(uuid=uuid).first()
+            tasksubmissionrequest = TaskSubmissionRequest.objects.filter(task_list__in=[task])
+            if tasksubmissionrequest.exists():
+                tasksubmissionrequest = tasksubmissionrequest.first()
+            print('tasksubmissionrequest',serializer)
+            serializer.save()
+            tasksubmissionrequest.task_list.add(serializer.instance)
+            tasksubmissionrequest.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

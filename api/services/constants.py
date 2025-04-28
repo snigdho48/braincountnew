@@ -42,3 +42,9 @@ CAMPAIGN_TYPE = (
     ('Monitoring', 'Monitoring'),
     ('Basic', 'Basic'),
 )
+
+APPROVAL_STATUS = (
+    ('PENDING', 'PENDING'),
+    ('APPROVED', 'APPROVED'),
+    ('REJECTED', 'REJECTED'),
+)

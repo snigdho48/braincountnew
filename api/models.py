@@ -94,6 +94,9 @@ class TaskSubmission(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,editable=True)
     updated_at = models.DateTimeField(default=timezone.now)
     extra_images = models.ManyToManyField('TaskSubmissionExtraImages', related_name='task_submissions', blank=True,null=True)
+    approval_status = models.CharField(choices=APPROVAL_STATUS, max_length=20,null=True, blank=True)
+    reject_reason = models.TextField(null=True, blank=True)
+    
 
     def __str__(self):
         return str(self.uuid)
@@ -107,7 +110,6 @@ class TaskSubmission(models.Model):
         else:
             # On create, always set it
             self.updated_at = timezone.now()
-        
         super().save(*args, **kwargs)
     
 class TaskSubmissionRequest(models.Model):

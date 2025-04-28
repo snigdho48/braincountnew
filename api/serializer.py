@@ -112,10 +112,13 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         child=serializers.ImageField(), required=False, write_only=True
     )
     extra_images_list = serializers.SerializerMethodField(read_only=True)
+    approval_status = serializers.CharField(required=False)
+    reject_reason = serializers.CharField(required=False)
+    
 
     class Meta:
         model = TaskSubmission
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list']
+        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason']
         extra_kwargs = {
             'user': {'required': False},
             'billboard': {'required': False},
@@ -145,6 +148,8 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.status = validated_data.get('status', instance.status)
         extra_images = validated_data.get('extra_images', None)
+        instance.approval_status = validated_data.get('approval_status', 'PENDING')
+        instance.reject_reason = validated_data.get('reject_reason', instance.reject_reason)
         print(extra_images)
         if extra_images:
             for image in extra_images:
@@ -162,6 +167,95 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+class TaskReSubmissionSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    user_id = serializers.IntegerField(source='user.id', write_only=True)
+    billboard = serializers.UUIDField(source='billboard.uuid', required=False)
+    billboard_detail = serializers.SerializerMethodField(read_only=True)
+    left = serializers.ImageField(required=False)
+    front = serializers.ImageField(required=False)
+    close = serializers.ImageField(required=False)
+    right = serializers.ImageField(required=False)
+    status = serializers.ListField(
+        child=serializers.ChoiceField(choices=BILLBOARD_STATUS),
+        allow_empty=False,
+    )
+    extra_images = serializers.ListField(
+        child=serializers.ImageField(), required=False, write_only=True
+    )
+    extra_images_list = serializers.SerializerMethodField(read_only=True)
+    approval_status = serializers.CharField(required=False)
+    reject_reason = serializers.CharField(required=False)
+
+    class Meta:
+        model = TaskSubmission
+        fields = [
+            'user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 
+            'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at',
+            'user', 'billboard_detail', 'extra_images', 'extra_images_list',
+            'approval_status', 'reject_reason'
+        ]
+        extra_kwargs = {
+            'user': {'required': False},
+            'billboard': {'required': False},
+        }
+
+    @extend_schema_field(BillboardSerializer)
+    def get_billboard_detail(self, obj):
+        return BillboardSerializer(obj.billboard).data
+
+    @extend_schema_field(TaskSubmissionExtraImagesSerializerDisplay(many=True))
+    def get_extra_images_list(self, obj):
+        extra_images = obj.extra_images.all()
+        return [img['image'] for img in TaskSubmissionExtraImagesSerializerDisplay(extra_images, many=True).data]
+
+    def create(self, validated_data):
+        # Get user
+        user_id = validated_data.pop('user', {}).get('id')
+        user = User.objects.get(id=user_id)
+
+        # Get billboard if provided
+        billboard_data = validated_data.pop('billboard', None)
+        billboard = None
+        if billboard_data:
+            billboard = Billboard.objects.get(uuid=billboard_data['uuid'])
+
+        # Handle extra images
+        extra_images = validated_data.pop('extra_images', None)
+
+        # Validation
+        if not any(validated_data.get(field) for field in ['front', 'left', 'right', 'close']):
+            raise serializers.ValidationError("Please upload at least one of left, front, close, or right images.")
+        if validated_data.get('status') is None:
+            raise serializers.ValidationError("Please select a status.")
+
+        # Create TaskSubmission
+        task_submission = TaskSubmission.objects.create(
+            user=user,
+            billboard=billboard,
+            approval_status=validated_data.get('approval_status', 'PENDING'),
+            reject_reason=validated_data.get('reject_reason',None),
+            latitude=validated_data.get('latitude'),
+            longitude=validated_data.get('longitude'),
+            comment=validated_data.get('comment'),
+            status=validated_data.get('status'),
+            left=validated_data.get('left', None),
+            front=validated_data.get('front', None),
+            close=validated_data.get('close', None),
+            right=validated_data.get('right', None),
+        )
+
+        # Save extra images
+        if extra_images:
+            for img in extra_images:
+                extra_image_obj = TaskSubmissionExtraImages.objects.create(
+                    task_submission=task_submission,
+                    image=img
+                )
+                task_submission.extra_images.add(extra_image_obj)
+
+        return task_submission
 
 class CardDataSerializer(serializers.Serializer):
     visited = serializers.IntegerField()
