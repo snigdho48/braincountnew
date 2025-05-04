@@ -399,11 +399,12 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
         if instance.is_accepeted != new_status and new_status == 'ACCEPTED':
          
             campaign=Campaign.objects.filter(
-                billboards=validated_data.get('billboard', instance.billboards),
+                billboards__in=[validated_data.get('billboard', instance.billboards)],
                 start_date__lte=instance.created_at,
                 end_date__gte=instance.created_at,
                 user=instance.user
             ).first()
+            print(f'monitorTime: {campaign}')
             for monitoring in range(0,int(campaign.monitor_time)):
                 
                 task=TaskSubmission.objects.create(
