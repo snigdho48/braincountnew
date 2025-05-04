@@ -404,7 +404,8 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
                 end_date__gte=instance.created_at,
                 user=instance.user
             ).first()
-            print(f'monitorTime: {campaign}')
+            if not campaign:
+                raise serializers.ValidationError("Campaign not found for this billboard")
             for monitoring in range(0,int(campaign.monitor_time)):
                 
                 task=TaskSubmission.objects.create(
