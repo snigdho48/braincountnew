@@ -27,7 +27,7 @@ jobs:
           git pull https://github.com/snigdho48/braincountnew.git 
           source venv/bin/activate
           pip install -r requirements.txt
-          python manage.py makemigrations
+          python manage.py makemigrations api
           python manage.py migrate
           mkdir -p static media
           python manage.py collectstatic --noinput
