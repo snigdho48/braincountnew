@@ -374,12 +374,7 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
     @extend_schema_field(CustomBillboardSerializer)
     def get_billboard_detail(self, obj):
         billboard = obj.billboards 
-        return {
-            'id':billboard.id,
-            'uuid': billboard.uuid,
-            'status': billboard.status,
-            'title': billboard.title,
-        }
+        return CustomBillboardSerializer(billboard).data
 
     def create(self, validated_data):
         user = validated_data.pop('user', None)
