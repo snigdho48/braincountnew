@@ -31,13 +31,14 @@ jobs:
           python manage.py migrate
           mkdir -p static media
           python manage.py collectstatic --noinput
+          systemctl daemon-reload
+          systemctl restart gunicorn-braincount
+          systemctl restart nginx
           chown -R www-data:www-data static
           chown -R $USER:www-data media
           chmod -R 755 static
           chmod -R 755 media
           chmod 755 /projects
-          systemctl daemon-reload
-          systemctl restart gunicorn-braincount
-          systemctl restart nginx
+
           echo "Deployment successful"
         EOF
