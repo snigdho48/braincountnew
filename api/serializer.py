@@ -350,7 +350,7 @@ class CampaignSerializer(serializers.ModelSerializer):
 class CustomBillboardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Billboard
-        fields = ['uuid',  'status', 'title', 'location', 'billboard_type']
+        fields = ['uuid',  'status', 'title', 'location', 'billboard_type','latitude', 'longitude']
 class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     user_detail = UserSerializer(read_only=True)
