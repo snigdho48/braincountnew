@@ -14,10 +14,13 @@ apidoc_urlpatterns = [
 
 
 urlpatterns = [
+  # auth
   path('auth/login/', LoginApiView.as_view(), name='login'),
   path('auth/logout/', LogoutApiView.as_view(), name='logout'),
+  # monitoring
   path('monitoring/', MonitoringView.as_view(), name='monitoring'),
   path('monitoring/billboard-status/', BillboardStatusView.as_view(), name='billboard-status'),
+  # campaign
   path('campaign/', CampaignApiView.as_view(), name='campaign'),
   path('billboard/', BillboardApiView.as_view(), name='billboard'),
   path('monitoring_request/', MonitoringRequestApiView.as_view(), name='monitoring-request'),

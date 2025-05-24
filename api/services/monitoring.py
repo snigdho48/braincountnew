@@ -173,7 +173,6 @@ class MonitoringView(APIView):
             tasksubmissionrequest = TaskSubmissionRequest.objects.filter(task_list__in=[task])
             if tasksubmissionrequest.exists():
                 tasksubmissionrequest = tasksubmissionrequest.first()
-            print('tasksubmissionrequest',serializer)
             serializer.save()
             tasksubmissionrequest.task_list.add(serializer.instance)
             tasksubmissionrequest.save()

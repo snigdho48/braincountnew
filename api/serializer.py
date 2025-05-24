@@ -57,8 +57,25 @@ class UserSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'password': {'write_only': True},
         }
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = '__all__'
+        
+class Billboard_infoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Billboard_info
+        fields = '__all__'
+class Billboard_ViewSerializer(serializers.ModelSerializer):
+    details = Billboard_infoSerializer(required=False, allow_null=True)
+    class Meta:
+        model = Billboard_View
+        fields = '__all__'
+        
 
 class BillboardSerializer(serializers.ModelSerializer):
+    location = LocationSerializer(required=False, allow_null=True)
+    views = Billboard_ViewSerializer(required=False, allow_null=True)
     class Meta:
         model = Billboard
         fields = '__all__'
@@ -150,7 +167,6 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         extra_images = validated_data.get('extra_images', None)
         instance.approval_status = validated_data.get('approval_status', 'PENDING')
         instance.reject_reason = validated_data.get('reject_reason', instance.reject_reason)
-        print(extra_images)
         if extra_images:
             for image in extra_images:
                 extra_image = TaskSubmissionExtraImages.objects.create(
@@ -263,9 +279,11 @@ class CardDataSerializer(serializers.Serializer):
     Good = serializers.IntegerField()
     Bad = serializers.IntegerField()
 
-        
+
+           
 class CampaignSerializer(serializers.ModelSerializer):
     billboards = BillboardSerializer(many=True, required=False)
+    
     user = UserSerializer(read_only=True)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     # monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
@@ -292,7 +310,6 @@ class CampaignSerializer(serializers.ModelSerializer):
         visited=0
         good =0
         for task_request in task_requests:
-            print(task_request.billboards)
             if task_request.task_list.filter(status__isnull=False).exists():
                 visited += 1
         for billboard in obj.billboards.all():
@@ -415,3 +432,30 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
             instance.billboard = validated_data['billboard']
         instance.save()
         return instance
+    
+    
+class GpsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Gps
+        fields = '__all__'
+
+class CvSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cv
+        fields = '__all__'
+
+class Cv_countSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cv_count
+        fields = '__all__'
+
+class PoiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Poi
+        fields = '__all__'
+
+
+
+
+
+

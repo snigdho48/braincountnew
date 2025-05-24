@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 
-admin.site.site_header = "BrainCount Admin"
+admin.site.site_header = "BrainCount Admin Dashboard"
 admin.site.site_title = "BrainCount Admin Portal"
 admin.site.index_title = "Welcome to BrainCount Admin Portal"
 
@@ -13,5 +13,11 @@ admin.site.register(TaskSubmission)
 admin.site.register(Campaign)
 admin.site.register(TaskSubmissionRequest)
 admin.site.register(TaskSubmissionExtraImages)
-
+admin.site.register(Location)
+admin.site.register(Billboard_info)
+admin.site.register(Cv_count)
+admin.site.register(Cv)
+admin.site.register(Poi)
+admin.site.register(Gps)
+admin.site.register(Billboard_View)
 # Register your models here.
