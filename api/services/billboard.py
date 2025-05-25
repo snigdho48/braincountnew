@@ -1,6 +1,6 @@
 
 from api.models import Billboard
-from api.serializer import BillboardSerializer
+from api.serializer import BillboardSerializer,CustomBillboardSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 import base64
@@ -18,8 +18,8 @@ class BillboardApiView(APIView):
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
-        request=BillboardSerializer,
-        responses={200: BillboardSerializer, 400: BillboardSerializer.errors},
+        request=CustomBillboardSerializer,
+        responses={200: CustomBillboardSerializer, 400: CustomBillboardSerializer.errors},
         description="Get and create billboard records",
         tags=["Billboard"],
         parameters=[
@@ -30,13 +30,13 @@ class BillboardApiView(APIView):
     def get(self, request):
         if request.user.groups.filter(name='admin').exists():
             billboards = Billboard.objects.all()
-            serializer = BillboardSerializer(billboards, many=True)
+            serializer = CustomBillboardSerializer(billboards, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         elif request.user.groups.filter(name='supervisor').exists():
             billboards = Billboard.objects.all()
             if request.query_params.get('uuid'):
                 billboards = billboards.filter(uuid=request.query_params.get('uuid'))
-            serializer = BillboardSerializer(billboards, many=True)
+            serializer = CustomBillboardSerializer(billboards, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)

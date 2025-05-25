@@ -23,6 +23,14 @@ urlpatterns = [
   # campaign
   path('campaign/', CampaignApiView.as_view(), name='campaign'),
   path('billboard/', BillboardApiView.as_view(), name='billboard'),
+  path('location/', LocationApiView.as_view(), name='location'),
+  path('billboard_info/', BillboardInfoApiView.as_view(), name='billboard-info'),
+  
+  path('poi/', PoiApiView.as_view(), name='poi'),
+  path('cv_count/', CvCountApiView.as_view(), name='cv-count'),
+  path('gps/', GpsApiView.as_view(), name='gps'),
+  path('cv/', CvApiView.as_view(), name='cv'),
+  path('billboard_view/', BillboardViewApiView.as_view(), name='billboard-view'),
   path('monitoring_request/', MonitoringRequestApiView.as_view(), name='monitoring-request'),
   path('monitoring_request/status', MonitoringRequestStatus.as_view(), name='monitoring-request-status'),
   

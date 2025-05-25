@@ -75,7 +75,7 @@ class Billboard_ViewSerializer(serializers.ModelSerializer):
 
 class BillboardSerializer(serializers.ModelSerializer):
     location = LocationSerializer(required=False, allow_null=True)
-    views = Billboard_ViewSerializer(required=False, allow_null=True)
+    views = Billboard_ViewSerializer(required=False, allow_null=True, many=True)
     class Meta:
         model = Billboard
         fields = '__all__'
@@ -91,6 +91,35 @@ class StuffSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
         }
+
+class CustomBillboardSerializer(serializers.ModelSerializer):
+    location = LocationSerializer(required=False, allow_null=True)
+    views = serializers.SerializerMethodField(required=False, allow_null=True)
+
+    class Meta:
+        model = Billboard
+        fields = ['uuid',  'title', 'location', 'views']
+
+    def get_views(self, obj):
+        billboard_views = obj.views.all()
+        senddata = []
+        for billboard_view in billboard_views:
+            senddata.append({
+                'id': billboard_view.id,
+                'billboard_type': billboard_view.billboard_type,
+                'status': billboard_view.status,
+                'category': billboard_view.category,
+                'front': billboard_view.front.url if billboard_view.front else None,
+                'left': billboard_view.left.url if billboard_view.left else None,
+                'right': billboard_view.right.url if billboard_view.right else None,
+                'close': billboard_view.close.url if billboard_view.close else None,
+                'resolution': billboard_view.details.screen_resolution if billboard_view.details.screen_resolution else None,
+                'height': billboard_view.details.panel_height_ft if billboard_view.details.panel_height_ft else None,
+                'width': billboard_view.details.panel_width_ft if billboard_view.details.panel_width_ft else None,
+                'location_type': billboard_view.details.location_type if billboard_view.details.location_type else None,
+
+            })
+        return senddata
 
 class AdvertiserSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -140,9 +169,9 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
             'user': {'required': False},
             'billboard': {'required': False},
         }
-    @extend_schema_field(BillboardSerializer)
+    @extend_schema_field(CustomBillboardSerializer)
     def get_billboard_detail(self, obj):
-        return BillboardSerializer(obj.billboard).data
+        return CustomBillboardSerializer(obj.billboard).data
     
     @extend_schema_field(TaskSubmissionExtraImagesSerializerDisplay(many=True))
     def get_extra_images_list(self, obj):
@@ -217,9 +246,9 @@ class TaskReSubmissionSerializer(serializers.ModelSerializer):
             'billboard': {'required': False},
         }
 
-    @extend_schema_field(BillboardSerializer)
+    @extend_schema_field(CustomBillboardSerializer)
     def get_billboard_detail(self, obj):
-        return BillboardSerializer(obj.billboard).data
+        return CustomBillboardSerializer(obj.billboard).data
 
     @extend_schema_field(TaskSubmissionExtraImagesSerializerDisplay(many=True))
     def get_extra_images_list(self, obj):
@@ -279,7 +308,6 @@ class CardDataSerializer(serializers.Serializer):
     Good = serializers.IntegerField()
     Bad = serializers.IntegerField()
 
-
            
 class CampaignSerializer(serializers.ModelSerializer):
     billboards = BillboardSerializer(many=True, required=False)
@@ -302,6 +330,10 @@ class CampaignSerializer(serializers.ModelSerializer):
             'user': {'required': False},
             'billboard': {'required': False},
         }
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['billboards'] = CustomBillboardSerializer(instance.billboards.all(), many=True).data
+        return data
     @extend_schema_field(CardDataSerializer)
     def get_card_data(self, obj):
         task_requests =TaskSubmissionRequest.objects.filter(
@@ -313,8 +345,10 @@ class CampaignSerializer(serializers.ModelSerializer):
             if task_request.task_list.filter(status__isnull=False).exists():
                 visited += 1
         for billboard in obj.billboards.all():
-            if billboard.status== 'Good':
-                good += 1
+            if billboard.views.exclude(status='GOOD').count() == 0:
+                good    += 1
+
+                
 
         billboards = obj.billboards.all().count()
         
@@ -364,10 +398,7 @@ class CampaignSerializer(serializers.ModelSerializer):
             instance.monitoring_requests.add(monitoring_request)
 
         return instance
-class CustomBillboardSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Billboard
-        fields = ['uuid',  'status', 'title', 'location', 'billboard_type','latitude', 'longitude']
+
 class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     user_detail = UserSerializer(read_only=True)

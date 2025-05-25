@@ -57,6 +57,7 @@ class Billboard(models.Model):
         return self.title 
     
 class Billboard_View(models.Model):
+    camera_id = models.CharField(max_length=255,null=True, blank=True)
     front = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
     left = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
     right = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
@@ -71,7 +72,7 @@ class Billboard_View(models.Model):
 
     
     def __str__(self):
-        return self.billboard_type
+        return str(self.pk) + " - " + self.billboard_type 
     
 
 
@@ -203,7 +204,7 @@ class Billboard_info(models.Model):
     visible_zone  = models.TextField(null=True, blank=True)
     
     def __str__(self):
-        return self.billboard.title
+        return str(self.pk)
     
 class Poi(models.Model):
     name = models.CharField(max_length=255,null=True, blank=True)
