@@ -253,7 +253,7 @@ class Gps(models.Model):
     lts = models.IntegerField(null=True, blank=True)
     reach = models.IntegerField(null=True, blank=True)
     dwell_time = models.FloatField(null=True, blank=True)
-    device_ids= models.ManyToManyField('Cv', related_name='gps',blank=True)
+    device_ids= models.TextField(null=True, blank=True)
     ips = models.TextField(null=True, blank=True)
     extrapolated_ots = models.IntegerField(null=True, blank=True)
     extrapolated_lts = models.IntegerField(null=True, blank=True)
