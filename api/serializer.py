@@ -160,11 +160,22 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     extra_images_list = serializers.SerializerMethodField(read_only=True)
     approval_status = serializers.CharField(required=False)
     reject_reason = serializers.CharField(required=False)
+    # only show id
+    view = serializers.PrimaryKeyRelatedField(
+        source='views.id', 
+        required=False,
+        read_only=True,
+    )
+    view_id = serializers.PrimaryKeyRelatedField(
+        source='views.id', 
+        required=False,
+        write_only=True,
+    )
     
 
     class Meta:
         model = TaskSubmission
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason']
+        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason','view','view_id']
         extra_kwargs = {
             'user': {'required': False},
             'billboard': {'required': False},
@@ -341,18 +352,19 @@ class CampaignSerializer(serializers.ModelSerializer):
         )
         visited=0
         good =0
+        allviews = obj.billboards.all().values_list('views', flat=True).count()
         for task_request in task_requests:
             if task_request.task_list.filter(status__isnull=False).exists():
                 visited += 1
         for billboard in obj.billboards.all():
-            if billboard.views.exclude(status='GOOD').count() == 0:
-                good    += 1
+            if billboard.views.filter(status='GOOD').exists():
+                good += billboard.views.filter(status='GOOD').count()
 
                 
 
         billboards = obj.billboards.all().count()
         
-        return {'visited':visited,'billboards':billboards,'Good':good,'Bad':billboards-good}
+        return {'visited':visited,'billboards':billboards,'Good':good,'Bad':allviews-good}
             
 
     @extend_schema_field(TaskSubmissionSerializer(many=True))
