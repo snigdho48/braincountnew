@@ -164,12 +164,12 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     view = serializers.PrimaryKeyRelatedField(
         source='views.id', 
         required=False,
-        read_only=True,
+    write_only=True,
     )
     view_id = serializers.PrimaryKeyRelatedField(
         source='views.id', 
         required=False,
-        write_only=True,
+        read_only=True,
     )
     
 
