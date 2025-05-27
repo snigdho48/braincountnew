@@ -98,7 +98,7 @@ class CustomBillboardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Billboard
-        fields = ['uuid',  'title', 'location', 'views']
+        fields = ['uuid',  'title', 'location', 'views','latitude','longitude']
 
     def get_views(self, obj):
         billboard_views = obj.views.all()
