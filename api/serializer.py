@@ -160,22 +160,11 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     extra_images_list = serializers.SerializerMethodField(read_only=True)
     approval_status = serializers.CharField(required=False)
     reject_reason = serializers.CharField(required=False)
-    # only show id
-    view = serializers.PrimaryKeyRelatedField(
-        source='views.id', 
-        required=False,
-    write_only=True,
-    )
-    view_id = serializers.PrimaryKeyRelatedField(
-        source='views.id', 
-        required=False,
-        read_only=True,
-    )
     
 
     class Meta:
         model = TaskSubmission
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason','view','view_id']
+        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason']
         extra_kwargs = {
             'user': {'required': False},
             'billboard': {'required': False},
@@ -372,8 +361,17 @@ class CampaignSerializer(serializers.ModelSerializer):
         task =TaskSubmissionRequest.objects.filter(
             campaign=obj,
         )
-        tasksubmission = [t for task in task for t in task.task_list.all()]
-        return TaskSubmissionSerializer(tasksubmission, many=True).data
+        
+        tasks = [ task for task in task if task.task_list.exists() ]
+        senddata = []
+        for tasksubmission in tasks:
+            alltask = tasksubmission.task_list.all()
+            for task in alltask:
+                task = TaskSubmissionSerializer(task).data
+                task['view'] = tasksubmission.view.id if tasksubmission.view else None
+                senddata.append(task)
+        
+        return senddata
 
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboards', [])
@@ -414,7 +412,6 @@ class CampaignSerializer(serializers.ModelSerializer):
 class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     user_detail = UserSerializer(read_only=True)
-
     billboards = serializers.PrimaryKeyRelatedField(queryset=Billboard.objects.all(), write_only=True)
     billboard_detail = serializers.SerializerMethodField(read_only=True)
     stuff = serializers.UUIDField(source='stuff.uuid', write_only=True)  
