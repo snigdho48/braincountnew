@@ -72,6 +72,7 @@ class MonitoringRequestApiView(APIView):
                 'completed': completed,
                 "all_task": all_task
             }
+            
             return Response(serializer_data, status=status.HTTP_200_OK)
 
         else:

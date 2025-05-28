@@ -346,8 +346,8 @@ class CampaignSerializer(serializers.ModelSerializer):
             if task_request.task_list.filter(status__isnull=False).exists():
                 visited += 1
         for billboard in obj.billboards.all():
-            if billboard.views.filter(status='GOOD').exists():
-                good += billboard.views.filter(status='GOOD').count()
+            if billboard.views.filter(status='Good').exists():
+                good += billboard.views.filter(status='Good').count()
 
                 
 
