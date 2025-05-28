@@ -160,6 +160,7 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     extra_images_list = serializers.SerializerMethodField(read_only=True)
     approval_status = serializers.CharField(required=False)
     reject_reason = serializers.CharField(required=False)
+    view = serializers.SerializerMethodField(read_only=True)
     
 
     class Meta:
@@ -173,6 +174,9 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     def get_billboard_detail(self, obj):
         return CustomBillboardSerializer(obj.billboard).data
     
+    def get_view(self, obj):
+        tsr = TaskSubmissionRequest.objects.filter(task_list__in=[obj]).first()
+        return tsr.view.id if tsr and tsr.view else None
     @extend_schema_field(TaskSubmissionExtraImagesSerializerDisplay(many=True))
     def get_extra_images_list(self, obj):
         extra_images = obj.extra_images.all()
