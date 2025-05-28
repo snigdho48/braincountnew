@@ -446,34 +446,34 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.user = validated_data.get('user', instance.user)
         new_status = validated_data.get('is_accepeted', instance.is_accepeted)
-        stuff =validated_data.get('stuff', None)
+        stuff = validated_data.get('stuff', None)
         if stuff is not None:
             instance.stuff = Stuff.objects.get_object_or_404(uuid=validated_data.get('stuff', instance.stuff))
-            
-            
-        
+
+        # Use the correct field name and get the Billboard instance
+        billboard_obj = validated_data.get('billboards', instance.billboards)
+
         if instance.is_accepeted != new_status and new_status == 'ACCEPTED':
-         
-            campaign=Campaign.objects.filter(
-                billboards__in=[validated_data.get('billboard', instance.billboards)],
-                start_date__lte=instance.created_at,
-                end_date__gte=instance.created_at,
-                user=instance.user
+            campaign = Campaign.objects.filter(
+                uuid=instance.campaign.uuid
             ).first()
             if not campaign:
                 raise serializers.ValidationError("Campaign not found for this billboard")
-            for monitoring in range(0,int(campaign.monitor_time)):
-                
-                task=TaskSubmission.objects.create(
+            # Convert monitor_time to int safely
+            
+            monitor_time = int(campaign.monitor_time)
+            print(CampaignSerializer(campaign).data)
+
+            for i in range(monitor_time):
+                task = TaskSubmission.objects.create(
                     user=instance.user,
-                    billboard=validated_data.get('billboard', instance.billboards),
+                    billboard=billboard_obj,
                 )
                 instance.task_list.add(task)
 
-
         instance.is_accepeted = new_status
-        if 'billboard' in validated_data:
-            instance.billboard = validated_data['billboard']
+        if 'billboards' in validated_data:
+            instance.billboards = validated_data['billboards']
         instance.save()
         return instance
     

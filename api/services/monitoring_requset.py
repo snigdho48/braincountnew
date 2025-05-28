@@ -99,6 +99,7 @@ class MonitoringRequestApiView(APIView):
     def patch(self, request):
         if request.user.groups.filter(name__in=['admin', 'supervisor']).exists():
             monitoring = get_object_or_404(TaskSubmissionRequest, uuid=request.data['uuid'])
+            
             serializer = TaskSubmissionRequestSerializer(monitoring, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
