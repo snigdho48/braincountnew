@@ -12,4 +12,5 @@ from api.services.cv_count import CvCountApiView
 from api.services.gps import GpsApiView
 from api.services.cv import CvApiView
 from api.services.billboard_view import BillboardViewApiView
+from api.services.withdraw import WithdrawalApiView
 

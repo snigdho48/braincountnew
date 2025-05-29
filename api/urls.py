@@ -33,6 +33,8 @@ urlpatterns = [
   path('billboard_view/', BillboardViewApiView.as_view(), name='billboard-view'),
   path('monitoring_request/', MonitoringRequestApiView.as_view(), name='monitoring-request'),
   path('monitoring_request/status', MonitoringRequestStatus.as_view(), name='monitoring-request-status'),
+  path('withdraw/', WithdrawalApiView.as_view(), name='withdraw'),
+  
   
   
     

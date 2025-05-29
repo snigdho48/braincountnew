@@ -498,6 +498,12 @@ class PoiSerializer(serializers.ModelSerializer):
         model = Poi
         fields = '__all__'
 
+class WithdrawalSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = Withdrawal
+        fields = '__all__'
+
 
 
 
