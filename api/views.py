@@ -13,4 +13,5 @@ from api.services.gps import GpsApiView
 from api.services.cv import CvApiView
 from api.services.billboard_view import BillboardViewApiView
 from api.services.withdraw import WithdrawalApiView
+from api.services.notification import NotificationApiView
 

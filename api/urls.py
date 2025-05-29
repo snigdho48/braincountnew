@@ -4,6 +4,7 @@ from django.urls import path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 # from rest_framework_simplejwt.views import TokenRefreshView
 from .views import *
+from .routing import  urlpatterns2
 
 
 apidoc_urlpatterns = [
@@ -38,4 +39,4 @@ urlpatterns = [
   
   
     
-]+ apidoc_urlpatterns
+]+ apidoc_urlpatterns + urlpatterns2

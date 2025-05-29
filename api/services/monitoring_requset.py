@@ -1,5 +1,4 @@
-
-from api.models import TaskSubmissionRequest
+from api.models import TaskSubmissionRequest, Notification
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 import base64
@@ -12,6 +11,8 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiRespons
 import uuid
 from api.serializer import TaskSubmissionSerializer,TaskSubmissionRequestSerializer
 from api.services.constants import TASK_CHOICES
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 class MonitoringRequestApiView(APIView):
@@ -99,15 +100,39 @@ class MonitoringRequestApiView(APIView):
     def patch(self, request):
         if request.user.groups.filter(name__in=['admin', 'supervisor']).exists():
             monitoring = get_object_or_404(TaskSubmissionRequest, uuid=request.data['uuid'])
-            
+            # Save old status for notification
+            old_status = monitoring.is_accepeted
             serializer = TaskSubmissionRequestSerializer(monitoring, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                # Send notification if status changed
+                new_status = serializer.instance.is_accepeted
+                if old_status != new_status:
+                    notif = Notification.objects.create(
+                        user=serializer.instance.user,
+                        message=f"Your task request status changed from {old_status} to {new_status}.",
+                        type='task_request'
+                    )
+                    self.send_realtime_notification(serializer.instance.user.id, {
+                        "message": notif.message,
+                        "type": notif.type,
+                        "created_at": str(notif.created_at),
+                        "is_read": notif.is_read,
+                    })
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
+    def send_realtime_notification(self, user_id, content):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{user_id}",
+            {
+                "type": "send_notification",
+                "content": content,
+            }
+        )
         
     @extend_schema(
         request=TaskSubmissionRequestSerializer,

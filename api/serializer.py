@@ -504,6 +504,12 @@ class WithdrawalSerializer(serializers.ModelSerializer):
         model = Withdrawal
         fields = '__all__'
 
+class NotificationSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
 
 
 

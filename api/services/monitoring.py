@@ -1,5 +1,4 @@
-
-from api.models import TaskSubmission,BILLBOARD_STATUS,TaskSubmissionRequest
+from api.models import TaskSubmission,BILLBOARD_STATUS,TaskSubmissionRequest, Notification
 from api.serializer import TaskSubmissionSerializer,TaskReSubmissionSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework import status
@@ -12,6 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
 import uuid
 from rest_framework.parsers import MultiPartParser, FormParser
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 
@@ -119,6 +120,9 @@ class MonitoringView(APIView):
         except TaskSubmission.DoesNotExist:
             return Response({"error": "TaskSubmission object not found"}, status=status.HTTP_404_NOT_FOUND)
 
+        # Save old status for notification
+        old_status = monitoring.approval_status
+
         # Make request.data mutable and add user_id
         data = request.data.copy()
         if request.user.groups.filter(name='admin').exists():
@@ -137,15 +141,37 @@ class MonitoringView(APIView):
             tasksubmission.is_accepeted = 'COMPLETED'
             tasksubmission.save()
 
-
         if serializer.is_valid():
             # Save the updated monitoring object
             serializer.save()
+            # Send notification if status changed
+            new_status = serializer.instance.approval_status
+            if old_status != new_status:
+                notif = Notification.objects.create(
+                    user=serializer.instance.user,
+                    message=f"Your task submission status changed from {old_status} to {new_status}.",
+                    type='task'
+                )
+                self.send_realtime_notification(serializer.instance.user.id, {
+                    "message": notif.message,
+                    "type": notif.type,
+                    "created_at": str(notif.created_at),
+                    "is_read": notif.is_read,
+                })
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    
+
+    def send_realtime_notification(self, user_id, content):
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"user_{user_id}",
+            {
+                "type": "send_notification",
+                "content": content,
+            }
+        )
+
     def post(self, request):
         # Ensure permission check for 'supervisor' and 'admin' groups
         if not request.user.groups.filter(name__in=['supervisor', 'admin']).exists():
