@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_spectacular.utils import extend_schema
-from api.models import Withdrawal, TaskSubmissionRequest, Notification
+from api.models import Withdrawal, Notification,TaskSubmission
 from api.serializer import WithdrawalSerializer
 from django.db.models import Sum
 from asgiref.sync import async_to_sync
@@ -25,9 +25,9 @@ class WithdrawalApiView(APIView):
         withdrawals = Withdrawal.objects.filter(user=request.user).order_by('-created_at')
         serializer = WithdrawalSerializer(withdrawals, many=True)
         # Count completed and pending tasks for this user
-        completed = TaskSubmissionRequest.objects.filter(user=request.user, is_accepeted='COMPLETED').count()
-        pending = TaskSubmissionRequest.objects.filter(user=request.user, is_accepeted='PENDING').count()
-        rejected = TaskSubmissionRequest.objects.filter(user=request.user, is_accepeted='REJECTED').count()
+        completed = TaskSubmission.objects.filter(user=request.user, approval_status='APPROVED').count()
+        pending = TaskSubmission.objects.filter(user=request.user, approval_status='PENDING').count()
+        rejected = TaskSubmission.objects.filter(user=request.user, approval_status='REJECTED').count()
         total_amount = Withdrawal.objects.filter(user=request.user,status= 'APPROVED').aggregate(total_amount=Sum('amount'))['total_amount'] or 0
         total_pending_amount = Withdrawal.objects.filter(user=request.user, status='PENDING').aggregate(total_amount=Sum('amount'))['total_amount'] or 0
         total_withdrawable_amount = Withdrawal.objects.filter(user=request.user, status='APPROVED').aggregate(total_amount=Sum('amount'))['total_amount'] or 0
