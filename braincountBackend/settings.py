@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'channels'
     
 ]
-ASGI_APPLICATION = 'braincountBackend.asgi.application'
+ASGI_APPLICATION = 'braincountBackend.asgi:application'
 
 CHANNEL_LAYERS = {
     "default": {
