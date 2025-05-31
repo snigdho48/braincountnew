@@ -279,6 +279,7 @@ class Cv(models.Model):
     
 class Withdrawal(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING,related_name='withdrawals')
+    task_count = models.IntegerField(null=True, blank=True)
     amount = models.FloatField(null=True, blank=True)
     status = models.CharField(max_length=255,null=True, blank=True,choices=APPROVAL_STATUS)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -296,3 +297,17 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.type} - {self.message[:30]}"
+    
+class Withdrawal_Task_Amount(models.Model):
+    amount = models.FloatField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    
+    
+    def __str__(self):
+        return str(self.amount)
+    
+
+    
+

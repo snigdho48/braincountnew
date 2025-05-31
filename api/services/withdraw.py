@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from drf_spectacular.utils import extend_schema
-from api.models import Withdrawal, Notification,TaskSubmission
+from api.models import Withdrawal, Notification,TaskSubmission,Withdrawal_Task_Amount
 from api.serializer import WithdrawalSerializer
 from django.db.models import Sum
 from asgiref.sync import async_to_sync
@@ -30,31 +30,36 @@ class WithdrawalApiView(APIView):
         rejected = TaskSubmission.objects.filter(user=request.user, approval_status='REJECTED').count()
         total_amount = Withdrawal.objects.filter(user=request.user,status= 'APPROVED').aggregate(total_amount=Sum('amount'))['total_amount'] or 0
         total_pending_amount = Withdrawal.objects.filter(user=request.user, status='PENDING').aggregate(total_amount=Sum('amount'))['total_amount'] or 0
-        total_withdrawable_amount = Withdrawal.objects.filter(user=request.user, status='APPROVED').aggregate(total_amount=Sum('amount'))['total_amount'] or 0
+        total_withdrawable_amount = completed -( withdrawals.aggregate(total_completed=Sum('task_count'))['total_completed'] or 0) 
+        withdrwal_amount_per_task = Withdrawal_Task_Amount.objects.filter(is_active=True).first()
         
         return Response({
             'withdrawals': serializer.data,
             'completed_tasks': completed,
             'pending_tasks': pending,
             'rejected_tasks': rejected,
-            'total_amount': total_amount,
-            'total_pending_amount': total_pending_amount,
-            'total_withdrawable_amount': total_withdrawable_amount
+            'total_amount': int(total_amount * withdrwal_amount_per_task.amount),
+            'total_pending_amount': int(total_pending_amount * withdrwal_amount_per_task.amount),
+            'total_withdrawable_amount': int(total_withdrawable_amount * withdrwal_amount_per_task.amount),
+            'withdrwal_amount_per_task': withdrwal_amount_per_task.amount or 0
         }, status=status.HTTP_200_OK)
     
     def post(self, request):
         if not request.user.groups.filter(name__in=['supervisor']).exists():
             return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
-        amount = request.data.get('amount')
+        amount = request.data.get('amount',None)
+        task_count = request.data.get('task_count')
         if not amount:
             return Response({'error': 'Amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not task_count:
+            return Response({'error': 'Task count is required.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             amount = float(amount)
             if amount <= 0:
                 return Response({'error': 'Amount must be positive.'}, status=status.HTTP_400_BAD_REQUEST)
         except ValueError:
             return Response({'error': 'Amount must be a number.'}, status=status.HTTP_400_BAD_REQUEST)
-        withdrawal = Withdrawal.objects.create(user=request.user, amount=amount, status='PENDING')
+        withdrawal = Withdrawal.objects.create(user=request.user, amount=amount, status='PENDING',task_count=task_count)
         # Send notification
         notif = Notification.objects.create(
             user=request.user,
