@@ -1,5 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+
 
 # after connect send all notifications to the user
 
@@ -23,7 +25,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             "notifications": notifications
         }))
     
-    async def get_user_notifications(self, user):
+    @database_sync_to_async
+    def get_user_notifications(self, user):
         from api.models import Notification
         from api.serializer import NotificationSerializer
 
