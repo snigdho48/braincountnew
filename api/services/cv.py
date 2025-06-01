@@ -41,7 +41,7 @@ class CvApiView(APIView):
         billboard = get_object_or_404(Billboard, view=view.id)
         data['billboard'] = billboard.id
         data['view'] = view.id
-        serializer = CvSerializer(data=request.data)
+        serializer = CvSerializer(data=request.data,many=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
