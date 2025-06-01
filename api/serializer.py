@@ -505,7 +505,7 @@ class WithdrawalSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class NotificationSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), read_only=True)
+    user = serializers.PrimaryKeyRelatedField(source='user.id', read_only=True)
     class Meta:
         model = Notification
         fields = '__all__'
