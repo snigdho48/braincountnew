@@ -24,6 +24,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     
     async def get_user_notifications(self, user):
         from api.models import Notification
+
         notifications = Notification.objects.filter(user=user)
         return notifications
     
