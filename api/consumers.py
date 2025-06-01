@@ -15,18 +15,18 @@ class NotificationConsumer(AsyncWebsocketConsumer):
           # await self.send_all_notifications(user)
             
 
-    async def send_all_notifications(self, user):
-        notifications = await self.get_user_notifications(user)
-        await self.send(text_data=json.dumps({
-            "type": "all_notifications",
-            "notifications": notifications
-        }))
+    # async def send_all_notifications(self, user):
+    #     notifications = await self.get_user_notifications(user)
+    #     await self.send(text_data=json.dumps({
+    #         "type": "all_notifications",
+    #         "notifications": notifications
+    #     }))
     
-    async def get_user_notifications(self, user):
-        from api.models import Notification
+    # async def get_user_notifications(self, user):
+    #     from api.models import Notification
 
-        notifications = Notification.objects.filter(user=user)
-        return notifications
+    #     notifications = Notification.objects.filter(user=user)
+    #     return notifications
     
     async def disconnect(self, close_code):
         user = self.scope["user"]
