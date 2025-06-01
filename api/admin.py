@@ -20,5 +20,6 @@ admin.site.register(Cv)
 admin.site.register(Poi)
 admin.site.register(Gps)
 admin.site.register(Billboard_View)
+admin.site.register(Withdrawal)
 admin.site.register(Withdrawal_Task_Amount)
 # Register your models here.
