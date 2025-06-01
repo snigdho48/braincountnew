@@ -12,7 +12,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             self.group_name = f"user_{user.id}"
             await self.channel_layer.group_add(self.group_name, self.channel_name)
             await self.accept()
-            await self.send_all_notifications(user)
+          # await self.send_all_notifications(user)
             
 
     async def send_all_notifications(self, user):
