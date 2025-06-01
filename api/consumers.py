@@ -1,6 +1,5 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from api.models import Notification
 # after connect send all notifications to the user
 
 
@@ -14,7 +13,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add(self.group_name, self.channel_name)
             await self.accept()
             await self.send_all_notifications(user)
-    
+            
+
     async def send_all_notifications(self, user):
         notifications = await self.get_user_notifications(user)
         await self.send(text_data=json.dumps({
@@ -23,6 +23,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         }))
     
     async def get_user_notifications(self, user):
+        from api.models import Notification
         notifications = Notification.objects.filter(user=user)
         return notifications
     
