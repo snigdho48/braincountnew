@@ -1,5 +1,7 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+from api.serializer import NotificationSerializer
 # after connect send all notifications to the user
 
 
@@ -24,9 +26,10 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     
     async def get_user_notifications(self, user):
         from api.models import Notification
+        from api.serializer import Notification
 
         notifications = Notification.objects.filter(user=user)
-        return notifications
+        return NotificationSerializer(notifications, many=True).data
     
     async def disconnect(self, close_code):
         user = self.scope["user"]
