@@ -9,7 +9,6 @@ from api.serializer import WithdrawalSerializer
 from django.db.models import Sum
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-import json
 
 class WithdrawalApiView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -93,15 +92,5 @@ class WithdrawalApiView(APIView):
             message=f"Your withdrawal request of amount {withdrawal.amount} status changed from {old_status} to {new_status}.",
             type='withdrawal'
         )
-
-    async def send_all_notifications(self, user):
-        notifications = await self.get_user_notifications(user)
-        await self.send(text_data=json.dumps({
-            "type": "all_notifications",
-            "notifications": notifications
-        }))
-    
-    async def send_notification(self, event):
-        await self.send(text_data=json.dumps(event["content"]))
     
 
