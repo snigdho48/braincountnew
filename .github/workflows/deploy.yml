@@ -36,6 +36,9 @@ jobs:
           systemctl restart nginx
           chown -R www-data:www-data static
           chown -R $USER:www-data media
+          sudo mkdir -p /var/run/daphne
+          sudo chown www-data:www-data /var/run/daphne
+          sudo systemctl restart daphne.service
           chmod -R 755 static
           chmod -R 755 media
           chmod 755 /projects
