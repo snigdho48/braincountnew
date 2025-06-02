@@ -22,4 +22,5 @@ admin.site.register(Gps)
 admin.site.register(Billboard_View)
 admin.site.register(Withdrawal)
 admin.site.register(Withdrawal_Task_Amount)
+admin.site.register(Notification)
 # Register your models here.

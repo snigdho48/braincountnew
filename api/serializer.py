@@ -166,7 +166,7 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TaskSubmission
-        fields = ['user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason','view']
+        fields = ['user_id','visit_number', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason','view']
         extra_kwargs = {
             'user': {'required': False},
             'billboard': {'required': False},
@@ -244,7 +244,7 @@ class TaskReSubmissionSerializer(serializers.ModelSerializer):
             'user_id', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 
             'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at',
             'user', 'billboard_detail', 'extra_images', 'extra_images_list',
-            'approval_status', 'reject_reason'
+            'approval_status', 'reject_reason','visit_number'
         ]
         extra_kwargs = {
             'user': {'required': False},

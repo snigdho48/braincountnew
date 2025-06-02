@@ -82,14 +82,17 @@ class Campaign(models.Model):
     billboards = models.ManyToManyField('Billboard', related_name='campaigns',blank=True)
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING,related_name='campaigns')
     title = models.CharField(max_length=255,null=True, blank=True)
+    objective = models.TextField(null=True, blank=True)
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     monitor_time = models.CharField(max_length=20, choices=MONITOR_TIME, null=True, blank=True)
     start_at = models.TimeField(null=True, blank=True)
+    approval_status = models.CharField(max_length=20, choices=APPROVAL_STATUS, null=True, blank=True)
     end_at = models.TimeField(null=True, blank=True)
     type = models.CharField(max_length=20, choices=CAMPAIGN_TYPE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    assets = models.FileField(upload_to='campaign_assets/',null=True, blank=True)
     
 
     def __str__(self):
@@ -102,7 +105,6 @@ class TaskSubmission(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     visit_number = models.IntegerField(null=True, blank=True)
-
     status =   MultiSelectField(choices=BILLBOARD_STATUS, max_length=100, null=True, blank=True)
     billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='monitoring',null=True, blank=True)
     front = models.ImageField(upload_to='billboard_images/',null=True, blank=True)
