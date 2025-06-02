@@ -177,7 +177,7 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
         return CustomBillboardSerializer(obj.billboard).data
 
     def get_previous_status(self, obj):
-            tsr = TaskSubmission.objects.filter(id=obj.id).first()
+            tsr = TaskSubmission.objects.filter(id=obj.id).first().status
             return tsr.status if tsr else None
         
     def get_view(self, obj):
