@@ -101,6 +101,8 @@ class TaskSubmission(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+    visit_number = models.IntegerField(null=True, blank=True)
+
     status =   MultiSelectField(choices=BILLBOARD_STATUS, max_length=100, null=True, blank=True)
     billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='monitoring',null=True, blank=True)
     front = models.ImageField(upload_to='billboard_images/',null=True, blank=True)

@@ -1,10 +1,12 @@
 BILLBOARD_STATUS = (
+    ('Resolved', 'Resolved'),
     ('Good', 'Good'),
     ('Broken', 'Broken'),
     ('Under Maintenance', 'Under Maintenance'),
     ('Not Working', 'Not Working'),
     ('Not Clear', 'Not Clear'),
     ('Not Visible', 'Not Visible'),
+    
     ('Other', 'Other'),
 )
 BILLBORD_CATEGORY = [

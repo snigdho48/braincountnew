@@ -4,6 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import *
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema_field
+from collections import defaultdict
 
 
 
@@ -95,7 +96,6 @@ class StuffSerializer(serializers.ModelSerializer):
 class CustomBillboardSerializer(serializers.ModelSerializer):
     location = LocationSerializer(required=False, allow_null=True)
     views = serializers.SerializerMethodField(required=False, allow_null=True)
-
     class Meta:
         model = Billboard
         fields = ['uuid',  'title', 'location', 'views','latitude','longitude']
@@ -117,9 +117,10 @@ class CustomBillboardSerializer(serializers.ModelSerializer):
                 'height': billboard_view.details.panel_height_ft if billboard_view.details.panel_height_ft else None,
                 'width': billboard_view.details.panel_width_ft if billboard_view.details.panel_width_ft else None,
                 'location_type': billboard_view.details.location_type if billboard_view.details.location_type else None,
-
+            
             })
         return senddata
+
 
 class AdvertiserSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -316,6 +317,7 @@ class CardDataSerializer(serializers.Serializer):
 class CampaignSerializer(serializers.ModelSerializer):
     billboards = BillboardSerializer(many=True, required=False)
     
+    
     user = UserSerializer(read_only=True)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     # monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
@@ -337,28 +339,34 @@ class CampaignSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['billboards'] = CustomBillboardSerializer(instance.billboards.all(), many=True).data
+        data['total_visited'] = instance.monitoring_requests.filter(is_accepeted='ACCEPTED').distinct().count()
+        bilboard_visited =[]
+        for billboard in instance.billboards.all():
+            visited = TaskSubmissionRequest.objects.filter(billboards=billboard,is_accepeted='ACCEPTED',campaign=instance).distinct().count()
+            bilboard_visited.append({'billboard':billboard.uuid,'visited':visited})
+        data['bilboard_visisted'] = bilboard_visited
         return data
     @extend_schema_field(CardDataSerializer)
     def get_card_data(self, obj):
-        task_requests =TaskSubmissionRequest.objects.filter(
+        task_requests = TaskSubmissionRequest.objects.filter(
             campaign=obj,
         )
-        visited=0
-        good =0
-        allviews = obj.billboards.all().values_list('views', flat=True).count()
-        for task_request in task_requests:
-            if task_request.task_list.filter(status__isnull=False).exists():
-                visited += 1
+        task_req= task_requests.filter(is_accepeted='ACCEPTED',campaign=obj)
+        max_visit_per_billboard = defaultdict(int)
+        for req in task_req:
+            billboard_id = req.billboards_id
+            visit_number = getattr(req, 'visit_number', 1)
+            if visit_number > max_visit_per_billboard[billboard_id]:
+                max_visit_per_billboard[billboard_id] = visit_number
+        visited = len(max_visit_per_billboard)
+        good = 0
+        allviews = obj.billboards.all().count()
         for billboard in obj.billboards.all():
-            if billboard.views.filter(status='Good').exists():
-                good += billboard.views.filter(status='Good').count()
-
-                
-
+            if billboard.views.exclude(status__in=['Good', 'Resolved']).exists():
+                good += 1
         billboards = obj.billboards.all().count()
-        
-        return {'visited':visited,'billboards':billboards,'Good':good,'Bad':allviews-good}
-            
+        return {'visited': visited, 'billboards': billboards, 'Good':  allviews - good, 'Bad':good}
+
 
     @extend_schema_field(TaskSubmissionSerializer(many=True))
     def get_all_monitorings(self, obj):
@@ -380,12 +388,15 @@ class CampaignSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboards', [])
         campaign = Campaign.objects.create(**validated_data)
+        visit_number = 0
         for billboard_data in billboards_data:
+            visit_number += 1
             billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
             monitoring_request = TaskSubmissionRequest.objects.create(
                 user=validated_data.get('user'),
                 billboard=billboard,
                 campaign=campaign,
+                visit_number=visit_number,
             )
             campaign.billboards.add(billboard)
             campaign.monitoring_requests.add(monitoring_request)
