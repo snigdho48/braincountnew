@@ -162,11 +162,12 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     approval_status = serializers.CharField(required=False)
     reject_reason = serializers.CharField(required=False)
     view = serializers.SerializerMethodField(read_only=True)
+    previous_status = serializers.SerializerMethodField(read_only=True)
     
 
     class Meta:
         model = TaskSubmission
-        fields = ['user_id','visit_number', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason','view']
+        fields = ['user_id','visit_number', 'uuid', 'latitude', 'longitude', 'status', 'billboard', 'front', 'left', 'right', 'close', 'comment', 'created_at', 'updated_at','user','billboard_detail','extra_images','extra_images_list','approval_status','reject_reason','view','previous_status']
         extra_kwargs = {
             'user': {'required': False},
             'billboard': {'required': False},
@@ -174,7 +175,11 @@ class TaskSubmissionSerializer(serializers.ModelSerializer):
     @extend_schema_field(CustomBillboardSerializer)
     def get_billboard_detail(self, obj):
         return CustomBillboardSerializer(obj.billboard).data
-    
+
+    def get_previous_status(self, obj):
+            tsr = TaskSubmission.objects.filter(id=obj.id).first()
+            return tsr.status if tsr else None
+        
     def get_view(self, obj):
         tsr = TaskSubmissionRequest.objects.filter(task_list__in=[obj]).first()
         return tsr.view.id if tsr and tsr.view else None
