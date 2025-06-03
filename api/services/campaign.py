@@ -1,4 +1,3 @@
-from turtle import title
 from api.models import TaskSubmission,BILLBOARD_STATUS,Monitor
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
