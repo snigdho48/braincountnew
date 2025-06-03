@@ -396,15 +396,12 @@ class CampaignSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboards', [])
         campaign = Campaign.objects.create(**validated_data)
-        visit_number = 0
         for billboard_data in billboards_data:
-            visit_number += 1
             billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
             monitoring_request = TaskSubmissionRequest.objects.create(
                 user=validated_data.get('user'),
                 billboard=billboard,
                 campaign=campaign,
-                visit_number=visit_number,
             )
             campaign.billboards.add(billboard)
             campaign.monitoring_requests.add(monitoring_request)
@@ -482,11 +479,13 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
             
             monitor_time = int(campaign.monitor_time)
             print(CampaignSerializer(campaign).data)
+            
 
             for i in range(monitor_time):
                 task = TaskSubmission.objects.create(
                     user=instance.user,
                     billboard=billboard_obj,
+                    visit_number=i+1,
                 )
                 instance.task_list.add(task)
 
