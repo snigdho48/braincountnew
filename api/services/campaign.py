@@ -52,7 +52,10 @@ class CampaignApiView(APIView):
         tags=["Campaign"],
     )
     def post(self, request):
-        serializer = CampaignSerializer(data=request.data)
+        user = request.data.get('user', None)
+        if not user:
+            user = request.user
+        serializer = CampaignSerializer(data=request.data, context={'user': user})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
