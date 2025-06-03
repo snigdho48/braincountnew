@@ -1,3 +1,4 @@
+import json
 from rest_framework import serializers
 from django.contrib.auth.models import User,Group
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -337,8 +338,7 @@ class CampaignSerializer(serializers.ModelSerializer):
     # no billboard, billboard visited,
     card_data= serializers.SerializerMethodField()
     billboards = CustomBillboardSerializer(many=True, read_only=True)
-    billboard_uuids = serializers.ListField(
-        child=serializers.UUIDField(),
+    billboard_uuids = serializers.CharField(
         write_only=True,
         required=False,
         help_text="List of Billboard UUIDs to attach to the campaign",
@@ -406,6 +406,8 @@ class CampaignSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboard_uuids', [])
+        billboards_data = billboards_data.split(',')
+        print(billboards_data)
         campaign = Campaign.objects.create(**validated_data)
         for billboard_data in billboards_data:
             billboard = Billboard.objects.filter(uuid=billboard_data).first()
