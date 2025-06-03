@@ -32,16 +32,16 @@ class MonitoringRequestApiView(APIView):
     def get(self, request):
         if request.user.groups.filter(name='admin').exists():
             monitoring = TaskSubmissionRequest.objects.all()
-            pending = TaskSubmissionRequest.objects.filter(is_accepted='PENDING').count()
-            accepted = TaskSubmissionRequest.objects.filter(is_accepted='ACCEPTED').count()
+            pending = TaskSubmissionRequest.objects.filter(is_accepeted='PENDING').count()
+            accepted = TaskSubmissionRequest.objects.filter(is_accepeted='ACCEPTED').count()
             all_task = monitoring.count()
 
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
             if request.query_params.get('status'):
-                monitoring = monitoring.filter(is_accepted=request.query_params.get('status'))
+                monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
             if request.query_params.get('exclude'):
-                monitoring = monitoring.exclude(is_accepted=request.query_params.get('exclude'))
+                monitoring = monitoring.exclude(is_accepeted=request.query_params.get('exclude'))
 
             serializer = TaskSubmissionRequestSerializer(monitoring, many=True)
             serializer_data = {
@@ -54,17 +54,19 @@ class MonitoringRequestApiView(APIView):
 
         elif request.user.groups.filter(name='supervisor').exists():
             monitoring = TaskSubmissionRequest.objects.filter(user=request.user)
-            pending = monitoring.filter(is_accepted='PENDING').count()
-            accepted = monitoring.filter(is_accepted='ACCEPTED').count()
-            completed = monitoring.filter(is_accepted='COMPLETED').count()
+            pending = monitoring.filter(is_accepeted='PENDING').count()
+            accepted = monitoring.filter(is_accepeted='ACCEPTED').count()
+            completed = monitoring.filter(is_accepeted='COMPLETED').count()
             all_task = monitoring.count()
+            
 
             if request.query_params.get('uuid'):
                 monitoring = monitoring.filter(uuid=request.query_params.get('uuid'))
             if request.query_params.get('status'):
-                monitoring = monitoring.filter(is_accepted=request.query_params.get('status'))
+                monitoring = monitoring.filter(is_accepeted=request.query_params.get('status'))
             if request.query_params.get('exclude'):
-                monitoring = monitoring.exclude(is_accepted=request.query_params.get('exclude'))
+                monitoring = monitoring.exclude(is_accepeted=request.query_params.get('exclude'))
+            
             serializer = TaskSubmissionRequestSerializer(monitoring, many=True)
             serializer_data = {
                 "monitoring": serializer.data,
@@ -101,12 +103,16 @@ class MonitoringRequestApiView(APIView):
         if request.user.groups.filter(name__in=['admin', 'supervisor']).exists():
             monitoring = get_object_or_404(TaskSubmissionRequest, uuid=request.data['uuid'])
             # Save old status for notification
-            old_status = monitoring.is_accepted
+            old_status = monitoring.is_accepeted
+           
+            print(request.data)
             serializer = TaskSubmissionRequestSerializer(monitoring, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
+                
                 # Send notification if status changed
-                new_status = serializer.instance.is_accepted
+                new_status = serializer.instance.is_accepeted
+                print(new_status)
                 if old_status != new_status:
                     notif = Notification.objects.create(
                         user=serializer.instance.user,

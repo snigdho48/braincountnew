@@ -138,7 +138,7 @@ class TaskSubmissionRequest(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     billboards = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='monitoring_requests',null=True, blank=True)
     view = models.ForeignKey('Billboard_View', on_delete=models.DO_NOTHING,related_name='monitoring_requests',null=True, blank=True)
-    is_accepted = models.CharField(choices=TASK_CHOICES, default='PENDING')
+    is_accepeted = models.CharField(choices=TASK_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True,editable=True)
     updated_at = models.DateTimeField(default=timezone.now)
     campaign = models.ForeignKey('Campaign', on_delete=models.DO_NOTHING,related_name='monitoring_requests')
