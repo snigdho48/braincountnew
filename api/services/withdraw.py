@@ -47,8 +47,13 @@ class WithdrawalApiView(APIView):
     def post(self, request):
         if not request.user.groups.filter(name__in=['supervisor']).exists():
             return Response({"error": "Permission denied"}, status=status.HTTP_401_UNAUTHORIZED)
-        amount = request.data.get('amount',None)
-        task_count = request.data.get('task_count')
+        withdrawals = Withdrawal.objects.filter(user=request.user).order_by('-created_at')
+        # Count completed and pending tasks for this user
+        completed = TaskSubmission.objects.filter(user=request.user, approval_status='APPROVED').count()
+        total_withdrawable_amount = completed -( withdrawals.aggregate(total_completed=Sum('task_count'))['total_completed'] or 0) 
+        withdrwal_amount_per_task = Withdrawal_Task_Amount.objects.filter(is_active=True).first()
+        amount = total_withdrawable_amount * withdrwal_amount_per_task.amount
+        task_count = withdrawals.aggregate(total_completed=Sum('task_count'))['total_completed'] or 0
         if not amount:
             return Response({'error': 'Amount is required.'}, status=status.HTTP_400_BAD_REQUEST)
         if not task_count:
