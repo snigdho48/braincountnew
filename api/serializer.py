@@ -330,11 +330,19 @@ class CampaignSerializer(serializers.ModelSerializer):
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
     # monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
     monitoring_requests = serializers.ListField(
-        child=serializers.UUIDField(), write_only=True
+        child=serializers.UUIDField(), write_only=True,required=False
     )
-    all_monitorings = serializers.SerializerMethodField()
+    all_monitorings = serializers.SerializerMethodField(read_only=True)
     # no billboard, billboard visited,
     card_data= serializers.SerializerMethodField()
+    billboards = CustomBillboardSerializer(many=True, read_only=True)
+    billboard_uuids = serializers.ListField(
+        child=serializers.UUIDField(),
+        write_only=True,
+        required=False,
+        help_text="List of Billboard UUIDs to attach to the campaign",
+    )
+
     
 
     class Meta:
@@ -347,19 +355,22 @@ class CampaignSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         data['billboards'] = CustomBillboardSerializer(instance.billboards.all(), many=True).data
-        data['total_visited'] = instance.monitoring_requests.filter(is_accepeted='ACCEPTED').distinct().count()
+        data['total_visited'] = instance.monitoring_requests.filter(is_accepted='ACCEPTED').distinct().count()
         bilboard_visited =[]
         for billboard in instance.billboards.all():
-            visited = TaskSubmissionRequest.objects.filter(billboards=billboard,is_accepeted='ACCEPTED',campaign=instance).distinct().count()
+            visited = TaskSubmissionRequest.objects.filter(billboards=billboard,is_accepted='ACCEPTED',campaign=instance).distinct().count()
             bilboard_visited.append({'billboard':billboard.uuid,'visited':visited})
         data['bilboard_visisted'] = bilboard_visited
         return data
+
+    def get_billboards(self, obj):
+        return  obj.billboards.all().values_list('uuid', flat=True)
     @extend_schema_field(CardDataSerializer)
     def get_card_data(self, obj):
         task_requests = TaskSubmissionRequest.objects.filter(
             campaign=obj,
         )
-        task_req= task_requests.filter(is_accepeted='ACCEPTED',campaign=obj)
+        task_req= task_requests.filter(is_accepted='ACCEPTED',campaign=obj)
         max_visit_per_billboard = defaultdict(int)
         for req in task_req:
             billboard_id = req.billboards_id
@@ -394,7 +405,7 @@ class CampaignSerializer(serializers.ModelSerializer):
         return senddata
 
     def create(self, validated_data):
-        billboards_data = validated_data.pop('billboards', [])
+        billboards_data = validated_data.pop('billboard_uuids', [])
         campaign = Campaign.objects.create(**validated_data)
         for billboard_data in billboards_data:
             billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
@@ -443,7 +454,7 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
             'billboards': {'required': False},
-            'is_accepeted': {'required': False}
+            'is_accepted': {'required': False}
 
         }
 
@@ -461,7 +472,7 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         instance.user = validated_data.get('user', instance.user)
-        new_status = validated_data.get('is_accepeted', instance.is_accepeted)
+        new_status = validated_data.get('is_accepted', instance.is_accepted)
         stuff = validated_data.get('stuff', None)
         if stuff is not None:
             instance.stuff = Stuff.objects.get_object_or_404(uuid=validated_data.get('stuff', instance.stuff))
@@ -469,7 +480,7 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
         # Use the correct field name and get the Billboard instance
         billboard_obj = validated_data.get('billboards', instance.billboards)
 
-        if instance.is_accepeted != new_status and new_status == 'ACCEPTED':
+        if instance.is_accepted != new_status and new_status == 'ACCEPTED':
             campaign = Campaign.objects.filter(
                 uuid=instance.campaign.uuid
             ).first()
@@ -489,7 +500,7 @@ class TaskSubmissionRequestSerializer(serializers.ModelSerializer):
                 )
                 instance.task_list.add(task)
 
-        instance.is_accepeted = new_status
+        instance.is_accepted = new_status
         if 'billboards' in validated_data:
             instance.billboards = validated_data['billboards']
         instance.save()

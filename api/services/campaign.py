@@ -1,4 +1,3 @@
-
 from api.models import TaskSubmission,BILLBOARD_STATUS,Monitor
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -47,7 +46,7 @@ class CampaignApiView(APIView):
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
     @extend_schema(
         request=CampaignSerializer,
-        responses={200: CampaignSerializer, 400: CampaignSerializer.errors},
+        responses={201: CampaignSerializer, 400: CampaignSerializer.errors},
         description="Create a new campaign record",
         tags=["Campaign"],
     )

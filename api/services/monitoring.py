@@ -138,7 +138,7 @@ class MonitoringView(APIView):
         serializer = TaskSubmissionSerializer(monitoring, data=data, partial=True)
         tasksubmission = TaskSubmissionRequest.objects.filter(task_list__in=[monitoring]).first()
         if tasksubmission.task_list.filter(front__isnull=False,close__isnull=False,left__isnull=False,right__isnull=False,status__isnull=False,comment__isnull=False).exists() ==False:
-            tasksubmission.is_accepeted = 'COMPLETED'
+            tasksubmission.is_accepted = 'COMPLETED'
             tasksubmission.save()
 
         if serializer.is_valid():
