@@ -328,9 +328,10 @@ class CampaignSerializer(serializers.ModelSerializer):
     
     user = UserSerializer(read_only=True)
     user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
-    # monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
+    monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
     monitoring_requests = serializers.ListField(
-        child=serializers.UUIDField(), write_only=True,required=False
+        child=serializers.UUIDField(),
+         write_only=True,required=False
     )
     all_monitorings = serializers.SerializerMethodField(read_only=True)
     # no billboard, billboard visited,
@@ -392,7 +393,7 @@ class CampaignSerializer(serializers.ModelSerializer):
             campaign=obj,
         )
         
-        tasks = [ task for task in task if task.task_list.exists() ]
+        tasks = [ task for task in task if task.task_list.exists()]
         senddata = []
         for tasksubmission in tasks:
             alltask = tasksubmission.task_list.all()
