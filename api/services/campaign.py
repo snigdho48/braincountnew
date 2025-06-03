@@ -1,3 +1,4 @@
+from turtle import title
 from api.models import TaskSubmission,BILLBOARD_STATUS,Monitor
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
@@ -48,6 +49,7 @@ class CampaignApiView(APIView):
         request=CampaignSerializer,
         responses={201: CampaignSerializer, 400: CampaignSerializer.errors},
         description="Create a new campaign record",
+        summary="FromData",
         tags=["Campaign"],
     )
     def post(self, request):

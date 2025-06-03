@@ -350,7 +350,6 @@ class CampaignSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {
             'user': {'required': False},
-            'billboard': {'required': False},
         }
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -408,7 +407,9 @@ class CampaignSerializer(serializers.ModelSerializer):
         billboards_data = validated_data.pop('billboard_uuids', [])
         campaign = Campaign.objects.create(**validated_data)
         for billboard_data in billboards_data:
-            billboard = Billboard.objects.get_object_or_404(uuid=billboard_data)
+            billboard = Billboard.objects.filter(uuid=billboard_data).first()
+            if not billboard:
+                raise serializers.ValidationError(f"Billboard with UUID {billboard_data} not found")
             monitoring_request = TaskSubmissionRequest.objects.create(
                 user=validated_data.get('user'),
                 billboard=billboard,
