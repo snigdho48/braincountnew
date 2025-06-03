@@ -55,7 +55,9 @@ class CampaignApiView(APIView):
         user = request.data.get('user', None)
         if not user:
             user = request.user
-        serializer = CampaignSerializer(data=request.data, context={'user': user})
+        # i have formData i want to add user
+        request.data['user'] = user
+        serializer = CampaignSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
