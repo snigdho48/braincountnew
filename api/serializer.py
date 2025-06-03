@@ -413,7 +413,7 @@ class CampaignSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Billboard with UUID {billboard_data} not found")
             monitoring_request = TaskSubmissionRequest.objects.create(
                 user=validated_data.get('user'),
-                billboard=billboard,
+                billboards=billboard,
                 campaign=campaign,
             )
             campaign.billboards.add(billboard)

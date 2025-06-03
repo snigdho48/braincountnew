@@ -57,6 +57,8 @@ class CampaignApiView(APIView):
             user = request.user
         # i have formData i want to add user
         request.data['user'] = user.id
+        print(request.data)
+
         serializer = CampaignSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
