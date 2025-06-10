@@ -74,7 +74,16 @@ class Billboard_View(models.Model):
     def __str__(self):
         return str(self.pk) + " - " + self.billboard_type 
     
-
+class Campaign_Time(models.Model):
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+    billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='campaign_times',null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return str(self.start_time) + " - " + str(self.end_time)
+    
 
    
 class Campaign(models.Model):
@@ -93,6 +102,7 @@ class Campaign(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     assets = models.FileField(upload_to='campaign_assets/',null=True, blank=True)
+    campaigns_time = models.ManyToManyField('Campaign_Time', related_name='campaigns',blank=True)
     
 
     def __str__(self):

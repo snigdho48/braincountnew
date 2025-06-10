@@ -93,7 +93,18 @@ class StuffSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'user': {'required': False},
         }
-
+class Campaign_TimeSerializer(serializers.ModelSerializer):
+    billboard = serializers.UUIDField(source='billboard.uuid', required=False)
+    class Meta:
+        model = Campaign_Time
+        fields = '__all__'
+        
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['billboard'] = instance.billboard.uuid
+        return data
+    
+    
 class CustomBillboardSerializer(serializers.ModelSerializer):
     location = LocationSerializer(required=False, allow_null=True)
     views = serializers.SerializerMethodField(required=False, allow_null=True)
@@ -338,6 +349,7 @@ class CampaignSerializer(serializers.ModelSerializer):
     # no billboard, billboard visited,
     card_data= serializers.SerializerMethodField()
     billboards = CustomBillboardSerializer(many=True, read_only=True)
+    campaigns_time = Campaign_TimeSerializer(many=True)
     billboard_uuids = serializers.CharField(
         write_only=True,
         required=False,
@@ -407,7 +419,10 @@ class CampaignSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboard_uuids', [])
         billboards_data = billboards_data.split(',')
-        print(billboards_data)
+        campaigns_time_data = validated_data.pop('campaigns_time', [])
+        for campaign_time_data in campaigns_time_data:
+            campaign_time = Campaign_Time.objects.create(**campaign_time_data)
+            campaign.campaigns_time.add(campaign_time)
         campaign = Campaign.objects.create(**validated_data)
         for billboard_data in billboards_data:
             billboard = Billboard.objects.filter(uuid=billboard_data).first()
