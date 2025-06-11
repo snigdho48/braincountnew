@@ -75,10 +75,11 @@ class Billboard_View(models.Model):
         return str(self.pk) + " - " + self.billboard_type 
     
 class Campaign_Time(models.Model):
-    start_time = models.TimeField(null=True, blank=True)
-    end_time = models.TimeField(null=True, blank=True)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
     billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='campaign_times',null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    instructions = models.TextField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):

@@ -1,4 +1,5 @@
-from api.models import TaskSubmission,BILLBOARD_STATUS,Monitor
+import json
+from api.models import TaskSubmission,BILLBOARD_STATUS,Monitor,TaskSubmissionRequest
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 import base64
@@ -52,17 +53,35 @@ class CampaignApiView(APIView):
         tags=["Campaign"],
     )
     def post(self, request):
+        # Create a mutable copy of the data
+        data = request.data.copy()
+        
+        # Get user from request data or use authenticated user
         user = request.data.get('user', None)
         if not user:
             user = request.user
-        # i have formData i want to add user
-        request.data['user'] = user.id
-        print(request.data)
 
-        serializer = CampaignSerializer(data=request.data)
+        # Set user_id for the serializer
+        data['user'] = user.id if isinstance(user, User) else user
+        
+        raw_input = data.get('campaigns_time_input')
+
+        if isinstance(raw_input, str):
+            try:
+                data['campaigns_time_input'] = json.dumps({
+                    'data': raw_input
+                })
+                
+            except json.JSONDecodeError:
+                return Response({"error": "Invalid JSON in campaigns_time_input"}, status=400)
+
+    
+        serializer = CampaignSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print("Serializer errors:", serializer.errors)  # Debug print
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     @extend_schema(
         request=CampaignSerializer,
@@ -77,6 +96,7 @@ class CampaignApiView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
+            
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"message": "You are not authorized to view this data"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -89,6 +109,7 @@ class CampaignApiView(APIView):
     def delete(self, request):
         if request.user.groups.filter(name='admin').exists():
             campaign = get_object_or_404(Campaign, uuid=request.data['uuid'])
+            TaskSubmissionRequest.objects.filter(campaign=campaign).delete()
             campaign.delete()
             return Response({"message": "Campaign deleted successfully"}, status=status.HTTP_200_OK)
         else:

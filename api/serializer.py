@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from rest_framework import serializers
 from django.contrib.auth.models import User,Group
@@ -7,7 +8,10 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema_field
 from collections import defaultdict
 
-
+def parse_iso8601(s):
+    s = s.rstrip('Z')  # Remove trailing 'Z' if present
+    s = s.replace('T', ' ')  # Replace 'T' with space
+    return datetime.strptime(s, '%Y-%m-%d %H:%M:%S.%f') 
 
 class TokenAuth(TokenObtainPairSerializer):
 
@@ -339,7 +343,7 @@ class CampaignSerializer(serializers.ModelSerializer):
     
     
     user = UserSerializer(read_only=True)
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True,required=False)
     monitoring_requests = serializers.UUIDField(source='monitoring_request.uuid', required=False)  # Accept UUID of the billboard, but do not allow changes to it
     monitoring_requests = serializers.ListField(
         child=serializers.UUIDField(),
@@ -349,7 +353,8 @@ class CampaignSerializer(serializers.ModelSerializer):
     # no billboard, billboard visited,
     card_data= serializers.SerializerMethodField()
     billboards = CustomBillboardSerializer(many=True, read_only=True)
-    campaigns_time = Campaign_TimeSerializer(many=True)
+    campaigns_time = Campaign_TimeSerializer(many=True, read_only=True)
+    campaigns_time_input = serializers.JSONField(write_only=True,required=False)
     billboard_uuids = serializers.CharField(
         write_only=True,
         required=False,
@@ -363,6 +368,8 @@ class CampaignSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {
             'user': {'required': False},
+            'campaigns_time_input': {'required': False},
+            'campaigns_time': {'required': False},
         }
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -419,11 +426,32 @@ class CampaignSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         billboards_data = validated_data.pop('billboard_uuids', [])
         billboards_data = billboards_data.split(',')
-        campaigns_time_data = validated_data.pop('campaigns_time', [])
-        for campaign_time_data in campaigns_time_data:
-            campaign_time = Campaign_Time.objects.create(**campaign_time_data)
-            campaign.campaigns_time.add(campaign_time)
+        campaigns_time_data = validated_data.pop('campaigns_time_input', [])
+        campaigns_time_data = json.loads(campaigns_time_data['data'])
+        
+        
+        
         campaign = Campaign.objects.create(**validated_data)
+        for i in range(len(campaigns_time_data)):
+            print(campaigns_time_data[i])  # Confirm it's a dict
+
+            start_time_str = campaigns_time_data[i].get('start_time')  # Expecting 'HH:MM'
+            end_time_str = campaigns_time_data[i].get('end_time')
+
+
+            
+            
+
+            campaign_time = Campaign_Time.objects.create(
+                start_time=parse_iso8601(start_time_str),
+                end_time=parse_iso8601(end_time_str),
+                billboard=Billboard.objects.get(uuid=campaigns_time_data[i].get('billboard')),
+                instructions=campaigns_time_data[i].get('instructions'),
+            )
+            campaign.campaigns_time.add(campaign_time)
+
+        
+            
         for billboard_data in billboards_data:
             billboard = Billboard.objects.filter(uuid=billboard_data).first()
             if not billboard:
