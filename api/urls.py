@@ -34,7 +34,7 @@ urlpatterns = [
   path('monitoring_request/', MonitoringRequestApiView.as_view(), name='monitoring-request'),
   path('monitoring_request/status', MonitoringRequestStatus.as_view(), name='monitoring-request-status'),
   path('withdraw/', WithdrawalApiView.as_view(), name='withdraw'),
-  
+  path('report/', CalculateReportView.as_view(), name='report'),
   
   
     

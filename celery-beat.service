@@ -1,0 +1,16 @@
+[Unit]
+Description=Celery Beat Service
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/braincountBackend
+Environment="PATH=/path/to/braincountBackend/venv/bin"
+ExecStart=/path/to/braincountBackend/venv/bin/python manage.py celery beat -l info
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 

@@ -292,6 +292,31 @@ class Cv(models.Model):
     def __str__(self):
         return str(self.camera_id + " - " + str(self.billboard.title))
     
+class Impression(models.Model):
+    billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='impressions')
+    view = models.ForeignKey('Billboard_View', on_delete=models.DO_NOTHING,related_name='impressions',null=True, blank=True)
+    date = models.DateField(null=True, blank=True)
+    hour = models.IntegerField(null=True, blank=True)
+    impressions = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    dwalltime = models.FloatField(null=True, blank=True)
+    frequency = models.FloatField(null=True, blank=True)
+    ots = models.DateTimeField(null=True, blank=True)
+    lts = models.DateTimeField(null=True, blank=True)
+    impression_detail = models.ManyToManyField('Impression_Detail', related_name='impressions', blank=True)
+    def __str__(self):
+        return str(self.billboard.title + " - " + str(self.date) + " - " + str(self.hour))
+    
+class Impression_Detail(models.Model):
+    vehicle_type = models.CharField(max_length=255,null=True, blank=True,choices=OBJECT_TYPE)
+    vehicle_count = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return str(self.vehicle_type + " - " + str(self.vehicle_count))
+    
+    
 class Withdrawal(models.Model):
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING,related_name='withdrawals')
     task_count = models.IntegerField(null=True, blank=True)

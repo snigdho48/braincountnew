@@ -23,4 +23,6 @@ admin.site.register(Withdrawal)
 admin.site.register(Withdrawal_Task_Amount)
 admin.site.register(Notification)
 admin.site.register(Campaign_Time)
+admin.site.register(Impression)
+admin.site.register(Impression_Detail)
 # Register your models here.
