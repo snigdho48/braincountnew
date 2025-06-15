@@ -7,7 +7,8 @@ Type=simple
 User=root
 Group=root
 WorkingDirectory=/projects/braincount
-ExecStart=/projects/braincount/venv/bin/celery -A braincountBackend beat -l info
+Environment=CELERYBEAT_SCHEDULE_FILE=/projects/braincount/celerybeat-schedule
+ExecStart=/projects/braincount/venv/bin/celery -A braincountBackend beat -l info --schedule=/projects/braincount/celerybeat-schedule
 Restart=always
 RestartSec=10
 

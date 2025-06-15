@@ -200,7 +200,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880 
 
 # Celery Configuration Options
-CELERY_TIMEZONE = "Asia/Kolkata"
+CELERY_TIMEZONE = "Asia/Dhaka"
+
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
