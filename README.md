@@ -1,5 +1,133 @@
 # BrainCount Backend
 
+This is the backend for the BrainCount application, built with Django and Django REST Framework.
+
+## Prerequisites
+
+- Python 3.8 or higher
+- Redis server
+- Virtual environment (recommended)
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd braincountBackend
+```
+
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+4. Run migrations:
+```bash
+python manage.py migrate
+```
+
+5. Create a superuser (optional):
+```bash
+python manage.py createsuperuser
+```
+
+## Running the Application
+
+1. Start the Django development server:
+```bash
+python manage.py runserver
+```
+
+2. Start Redis server (required for Celery and Channels):
+```bash
+redis-server
+```
+
+3. Start Celery worker (in a new terminal):
+```bash
+celery -A braincountBackend worker -l info
+```
+
+4. Start Celery beat for periodic tasks (in a new terminal):
+```bash
+celery -A braincountBackend beat -l info
+```
+
+## API Documentation
+
+The API documentation is available at:
+- Swagger UI: `/api/schema/swagger-ui/`
+- ReDoc: `/api/schema/redoc/`
+
+## Project Structure
+
+```
+braincountBackend/
+├── api/                    # Main application code
+├── braincountBackend/      # Project settings
+├── media/                  # User-uploaded files
+├── static/                 # Static files
+├── manage.py              # Django management script
+└── requirements.txt       # Project dependencies
+```
+
+## Features
+
+- User authentication with JWT
+- Campaign management
+- Billboard management
+- Impression tracking
+- Real-time updates with WebSocket
+- Periodic tasks with Celery
+- API documentation with Swagger/ReDoc
+
+## Development
+
+### Running Tests
+
+```bash
+python manage.py test
+```
+
+### Code Style
+
+The project follows PEP 8 style guide. You can check your code style with:
+
+```bash
+flake8
+```
+
+## Deployment
+
+1. Set `DEBUG = False` in settings.py
+2. Configure your production database
+3. Set up a production web server (e.g., Gunicorn)
+4. Configure static and media files
+5. Set up SSL/TLS certificates
+6. Configure environment variables
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+[Your License Here]
+
+## Support
+
+For support, please contact [Your Contact Information]
+
 ## Background Services Setup
 
 This project uses Redis for two main purposes:
@@ -46,91 +174,57 @@ To enable Redis on boot:
 sudo systemctl enable redis
 ```
 
-### Setting up Celery Services
+### Linux
 
-1. Copy the service files to systemd:
+1. Copy the service files to systemd directory:
 ```bash
 sudo cp celery-worker.service /etc/systemd/system/
 sudo cp celery-beat.service /etc/systemd/system/
 ```
 
-2. Update the service files with your actual paths:
-   - Replace `/path/to/braincountBackend` with your actual project path
-   - Update user/group if needed (default is www-data)
-
-3. Reload systemd:
+2. Reload systemd:
 ```bash
 sudo systemctl daemon-reload
 ```
 
-4. Enable services to start on boot:
+3. Enable and start the services:
 ```bash
 sudo systemctl enable celery-worker
 sudo systemctl enable celery-beat
-```
-
-5. Start the services:
-```bash
 sudo systemctl start celery-worker
 sudo systemctl start celery-beat
 ```
 
-### Checking Service Status
-
-To check if services are running:
+4. Check service status:
 ```bash
 sudo systemctl status celery-worker
 sudo systemctl status celery-beat
-sudo systemctl status redis
 ```
 
-To view logs:
+5. View logs:
 ```bash
-journalctl -u celery-worker
-journalctl -u celery-beat
-journalctl -u redis
+sudo journalctl -u celery-worker
+sudo journalctl -u celery-beat
 ```
 
-### Service Files
+The services are configured to run from `/projects/braincount` directory with the following settings:
+- User: root
+- Group: root
+- Working Directory: /projects/braincount
+- Dependencies: network.target and redis.service
+- Auto-restart: enabled
+- Start on boot: enabled
 
-#### celery-worker.service
-```ini
-[Unit]
-Description=Celery Worker Service
-After=network.target redis.service
-
-[Service]
-Type=simple
-User=www-data
-Group=www-data
-WorkingDirectory=/path/to/braincountBackend
-Environment="PATH=/path/to/braincountBackend/venv/bin"
-ExecStart=/path/to/braincountBackend/venv/bin/python manage.py celery worker -l info
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
+To stop the services:
+```bash
+sudo systemctl stop celery-worker
+sudo systemctl stop celery-beat
 ```
 
-#### celery-beat.service
-```ini
-[Unit]
-Description=Celery Beat Service
-After=network.target redis.service
-
-[Service]
-Type=simple
-User=www-data
-Group=www-data
-WorkingDirectory=/path/to/braincountBackend
-Environment="PATH=/path/to/braincountBackend/venv/bin"
-ExecStart=/path/to/braincountBackend/venv/bin/python manage.py celery beat -l info
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
+To restart the services:
+```bash
+sudo systemctl restart celery-worker
+sudo systemctl restart celery-beat
 ```
 
 ### Troubleshooting

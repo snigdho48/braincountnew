@@ -23,4 +23,8 @@ app.conf.beat_schedule = {
 }
 
 # Set max interval to 1 hour (3600 seconds)
-app.conf.beat_max_loop_interval = 3600 
+app.conf.beat_max_loop_interval = 5400
+
+@app.task(bind=True, ignore_result=True)
+def debug_task(self):
+    print(f'Request: {self.request!r}') 

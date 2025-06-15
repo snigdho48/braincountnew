@@ -4,11 +4,10 @@ After=network.target redis.service
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
-WorkingDirectory=/path/to/braincountBackend
-Environment="PATH=/path/to/braincountBackend/venv/bin"
-ExecStart=/path/to/braincountBackend/venv/bin/python manage.py celery beat -l info
+User=root
+Group=root
+WorkingDirectory=/projects/braincount
+ExecStart=/projects/braincount/venv/bin/celery -A braincountBackend beat -l info
 Restart=always
 RestartSec=10
 
