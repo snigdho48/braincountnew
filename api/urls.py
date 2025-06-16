@@ -35,7 +35,7 @@ urlpatterns = [
   path('monitoring_request/status', MonitoringRequestStatus.as_view(), name='monitoring-request-status'),
   path('withdraw/', WithdrawalApiView.as_view(), name='withdraw'),
   path('report/', CalculateReportView.as_view(), name='report'),
-  
+  path('report/upload/', UploadReportView.as_view(), name='report-upload'),
   
     
 ]+ apidoc_urlpatterns 

@@ -8,8 +8,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
 from django.db.models import F, Sum, Value, JSONField
-from api.models import Campaign, Impression, Impression_Detail
+from api.models import Campaign, Impression, Impression_Detail, Billboard
 from django.utils import timezone
+
 
 
 class ReportService:
@@ -251,6 +252,40 @@ class CalculateReportView(APIView):
             'location_wise_data': formatted_location_data,
             'area_wise_data': formatted_area_data
         }, status=status.HTTP_200_OK)
+        
+class UploadReportView(APIView):
+    
+    @extend_schema(
+        summary="Upload Report",
+        description="Upload Report",
+        
+    )
+    def post(self, request):
+        data = request.data
+        for item in data:
+            #get or create impression
+            impression, created = Impression.objects.get_or_create(
+                billboard=Billboard.objects.get(uuid=item['billboard']),
+                date=item['date'],
+                hour=item['hour'],
+            )
+
+            if created:
+                impression.impressions = 1
+                impression.ots = timezone.now()
+                impression.lts = timezone.now()
+                impression.dwalltime = item['dwalltime']
+                impression.frequency = 0
+            else:
+                impression.impressions += 1
+                impression.frequency += 1
+                impression.lts = timezone.now()
+                impression.dwalltime = (
+                    float(item['dwalltime']) + float(impression.dwalltime)
+                ) / 2
+            impression.save()
+                
+        return Response({"message": "Report updated successfully"}, status=status.HTTP_200_OK)
     
     
 
