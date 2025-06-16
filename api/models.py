@@ -301,8 +301,8 @@ class Impression(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     dwalltime = models.FloatField(null=True, blank=True)
     frequency = models.FloatField(null=True, blank=True)
-    ots = models.DateTimeField(null=True, blank=True)
-    lts = models.DateTimeField(null=True, blank=True)
+    ots = models.IntegerField(null=True, blank=True)
+    lts = models.IntegerField(null=True, blank=True)
     impression_detail = models.ManyToManyField('Impression_Detail', related_name='impressions', blank=True)
     def __str__(self):
         return str(self.billboard.title + " - " + str(self.date) + " - " + str(self.hour))

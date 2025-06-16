@@ -7,9 +7,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
-from django.db.models import F, Sum, Value, JSONField
+from django.db.models import F, Sum, Value, JSONField, Avg, Max, Min
 from api.models import Campaign, Impression, Impression_Detail, Billboard
 from django.utils import timezone
+from statistics import mean
 
 
 
@@ -99,15 +100,15 @@ class CalculateReportView(APIView):
         date_wise_data = []
         hour_wise_impressions = []
         total_impressions = 0
-        temp_data = []
+
         card_data = {}
         total_billboard_data = 0
-        ots = timezone.now()
-        lts = timezone.now()
+        ots = 0
+        lts = 0
         billboard_wise_data = []
         location_wise_data = []
         area_wise_data = []
-        
+        # unique billboard data
         all_billboards_impressions = Impression.objects.filter(
             billboard__in=billboards_data.values_list('billboard', flat=True)
         ).order_by('date')
@@ -127,7 +128,6 @@ class CalculateReportView(APIView):
             all_billboards_impressions = all_billboards_impressions.filter(billboard__location__location__in=location_list)
         if billboard_type:
             all_billboards_impressions = all_billboards_impressions.filter(billboard__views__billboard_type=billboard_type)
-            
         for billboard_data in billboards_data:
             impressions_list = all_billboards_impressions.filter(
                 billboard=billboard_data.billboard
@@ -150,14 +150,8 @@ class CalculateReportView(APIView):
                 # Calculate averages
        
                 total_billboard_data += 1
-
-               
-                
-                # Update OTS and LTS
-                if impressions_list.first().ots and impressions_list.first().ots < ots:
-                    ots = impressions_list.first().ots
-                if impressions_list.first().lts and impressions_list.first().lts > lts:
-                    lts = impressions_list.first().lts
+                ots += impressions_list.aggregate(ots=Sum('ots'))['ots'] or 0
+                lts += impressions_list.aggregate(lts=Sum('lts'))['lts'] or 0
                 
                 # Get date wise total impressions
 
@@ -177,7 +171,7 @@ class CalculateReportView(APIView):
                 ).values('location', 'impressions'))
         hour_wise_impressions.append(all_billboards_impressions.values('hour').annotate(
                     impressions=Sum('impressions')
-                ))  
+                ))
         date_wise_data.append(all_billboards_impressions.values('date').annotate(
                     impressions=Sum('impressions')
                 ))
@@ -186,17 +180,15 @@ class CalculateReportView(APIView):
                 ).values('billboard__location__town_class', 'billboard__location__thana', 'impressions').annotate(
                     area=F('billboard__location__town_class')
                 ).values('area', 'billboard__location__thana', 'impressions'))
-        temp_data.append(all_billboards_impressions.aggregate(
-                    dwalltime=Sum('dwalltime')/all_billboards_impressions.count(),
-                    frequency=Sum('frequency')
-                ))
+
+
         card_data = {
-            'ots': ots,
-            'lts': lts,
-            'avg_dwalltime': round(sum(x['dwalltime'] for x in temp_data)/total_billboard_data, 2) if temp_data else 0,
-            'total_frequency': round(sum(x['frequency'] for x in temp_data)/total_billboard_data, 0) if temp_data else 0,
+            'ots': round(ots/total_billboard_data, 0),
+            'lts': round(lts/total_billboard_data, 0),
+            'avg_dwalltime': round(mean(all_billboards_impressions.values_list('dwalltime', flat=True)), 2) if all_billboards_impressions else 0,
+            'total_frequency': round(sum(all_billboards_impressions.values_list('frequency', flat=True))/all_billboards_impressions.count(), 0) if all_billboards_impressions else 0,
             'total_impressions': total_impressions,
-            'total_billboards': billboards_data.count(),
+            'total_billboards': billboards_data.values_list('billboard', flat=True).distinct().count(),
             'total_date': len(date_wise_data[0])
         }
         # Format area_wise_data
@@ -242,12 +234,26 @@ class CalculateReportView(APIView):
         
         formatted_location_data = list(location_dict.values())
 
+        # Format hour_wise_impressions
+        hour_dict = {}
+        for hour_group in hour_wise_impressions:
+            for item in hour_group:
+                hour = item['hour']
+                if hour not in hour_dict:
+                    hour_dict[hour] = {
+                        'hour': hour,
+                        'impressions': 0
+                    }
+                hour_dict[hour]['impressions'] += item['impressions']
+        
+        formatted_hour_data = list(hour_dict.values())
+
         return Response({
             "message": "Report calculated successfully",
             "vehicale_data": date_wise_vehicle_wise_data[0],
             "date_wise_data": date_wise_data[0],
             'card_data': card_data,
-            'hour_wise_impressions': hour_wise_impressions[0],
+            'hour_wise_impressions': formatted_hour_data,
             'billboard_wise_data': billboard_wise_data,
             'location_wise_data': formatted_location_data,
             'area_wise_data': formatted_area_data
@@ -262,30 +268,57 @@ class UploadReportView(APIView):
     )
     def post(self, request):
         data = request.data
+        now = timezone.now()
+        billboard_cache = {}
+
         for item in data:
-            #get or create impression
-            impression, created = Impression.objects.get_or_create(
-                billboard=Billboard.objects.get(uuid=item['billboard']),
+            uuid = item['billboard']
+            if uuid not in billboard_cache:
+                billboard_cache[uuid] = Billboard.objects.get(uuid=uuid)
+            billboard = billboard_cache[uuid]
+
+            impression = Impression.objects.filter(
+                billboard=billboard,
                 date=item['date'],
                 hour=item['hour'],
             )
 
-            if created:
-                impression.impressions = 1
-                impression.ots = timezone.now()
-                impression.lts = timezone.now()
-                impression.dwalltime = item['dwalltime']
-                impression.frequency = 0
+            if not impression.exists():
+                impression = Impression.objects.create(
+                    billboard=billboard,
+                    date=item['date'],
+                    hour=item['hour'],
+                    impressions=item['impressions'],
+                    ots=1,
+                    lts=1,
+                    dwalltime=float(item['dwalltime']),
+                    frequency=0
+                )
+
             else:
-                impression.impressions += 1
-                impression.frequency += 1
-                impression.lts = timezone.now()
-                impression.dwalltime = (
-                    float(item['dwalltime']) + float(impression.dwalltime)
-                ) / 2
-            impression.save()
+                impression = impression.first()
+                impression.impressions += item['impressions']
                 
+                impression.ots += 1
+                impression.lts += 1
+                impression.dwalltime = mean(impression.dwalltime, float(item['dwalltime']))
+
+            impression.save()
+
         return Response({"message": "Report updated successfully"}, status=status.HTTP_200_OK)
+    
+class ImpreessionDetailView(APIView):
+
+    def get(self, request):
+        billboard_map = [
+            'ad90ef64-7617-42a2-86b2-919701d03669',
+            'd1899d57-7140-4be9-a246-b8361bda3b0e',
+            '06b9fe55-0264-40c9-893d-b5e1142189d7',
+            '59d6b25c-d1f5-4921-b2a9-ffb352df4fee',
+        ]
+        impressions = Impression.objects.filter(billboard__uuid__in=billboard_map)
+        impressions.delete()
+        return Response({"message": "Impressions fetched successfully", "impressions": impressions}, status=status.HTTP_200_OK)
     
     
 
