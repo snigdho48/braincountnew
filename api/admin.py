@@ -25,4 +25,5 @@ admin.site.register(Notification)
 admin.site.register(Campaign_Time)
 admin.site.register(Impression)
 admin.site.register(Impression_Detail)
+admin.site.register(Impression_Reach_Id)
 # Register your models here.

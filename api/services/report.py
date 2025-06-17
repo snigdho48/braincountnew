@@ -8,7 +8,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiResponse
 from django.db.models import F, Sum, Value, JSONField, Avg, Max, Min
-from api.models import Campaign, Impression, Impression_Detail, Billboard
+from api.models import Campaign, Impression, Impression_Detail, Billboard, Impression_Reach_Id
 from django.utils import timezone
 from statistics import mean
 
@@ -144,7 +144,7 @@ class CalculateReportView(APIView):
                 billboard_wise_data.append({
                     'uuid': billboard_data.billboard.uuid,
                     'impressions': impressions_list.aggregate(impressions=Sum('impressions'))['impressions'] or 0,
-                    'reach': int((impressions_list.aggregate(impressions=Sum('impressions'))['impressions'] or 0) / billboards_data.count())
+                    'reach': impressions_list.values_list('reach__reach_id',flat=True).distinct().count() or 0
                 })
            
                 # Calculate averages
@@ -180,13 +180,13 @@ class CalculateReportView(APIView):
                 ).values('billboard__location__town_class', 'billboard__location__thana', 'impressions').annotate(
                     area=F('billboard__location__town_class')
                 ).values('area', 'billboard__location__thana', 'impressions'))
-
+        print(all_billboards_impressions.values_list('reach__reach_id',flat=True).count())
 
         card_data = {
             'ots': round(ots/total_billboard_data, 0),
             'lts': round(lts/total_billboard_data, 0),
             'avg_dwalltime': round(mean(all_billboards_impressions.values_list('dwalltime', flat=True)), 2) if all_billboards_impressions else 0,
-            'total_frequency': round(sum(all_billboards_impressions.values_list('frequency', flat=True))/all_billboards_impressions.count(), 0) if all_billboards_impressions else 0,
+            'total_frequency': all_billboards_impressions.values_list('reach__reach_id',flat=True).distinct().count() if all_billboards_impressions else 0,
             'total_impressions': total_impressions,
             'total_billboards': billboards_data.values_list('billboard', flat=True).distinct().count(),
             'total_date': len(date_wise_data[0])
@@ -268,44 +268,93 @@ class UploadReportView(APIView):
     )
     def post(self, request):
         data = request.data
-        now = timezone.now()
         billboard_cache = {}
-
+        CHUNK_SIZE = 100  # Process 100 records at a time
+        
+        # First pass: collect all billboards
+        print("Collecting billboards...")
         for item in data:
             uuid = item['billboard']
             if uuid not in billboard_cache:
                 billboard_cache[uuid] = Billboard.objects.get(uuid=uuid)
-            billboard = billboard_cache[uuid]
-
-            impression = Impression.objects.filter(
-                billboard=billboard,
-                date=item['date'],
-                hour=item['hour'],
-            )
-
-            if not impression.exists():
-                impression = Impression.objects.create(
+        
+        # Process data in chunks
+        total_chunks = (len(data) + CHUNK_SIZE - 1) // CHUNK_SIZE
+        for chunk_idx in range(total_chunks):
+            print(f"Processing chunk {chunk_idx + 1}/{total_chunks}")
+            start_idx = chunk_idx * CHUNK_SIZE
+            end_idx = min((chunk_idx + 1) * CHUNK_SIZE, len(data))
+            chunk_data = data[start_idx:end_idx]
+            
+            reach_ids_to_create = []
+            impressions_to_create = []
+            impressions_to_update = []
+            
+            # Process chunk
+            for item in chunk_data:
+                billboard = billboard_cache[item['billboard']]
+                
+                # Parse reach IDs
+                reach_ids = [id.strip().strip("'") for id in item['reach'].strip('[]').split('\n')]
+                
+                # Check if impression exists
+                impression = Impression.objects.filter(
                     billboard=billboard,
                     date=item['date'],
-                    hour=item['hour'],
-                    impressions=item['impressions'],
-                    ots=1,
-                    lts=1,
-                    dwalltime=float(item['dwalltime']),
-                    frequency=0
+                    hour=item['hour']
                 )
 
-            else:
-                impression = impression.first()
-                impression.impressions += item['impressions']
-                
-                impression.ots += 1
-                impression.lts += 1
-                impression.dwalltime = mean(impression.dwalltime, float(item['dwalltime']))
+                if not impression.exists():
+                    # Create new impression
+                    new_impression = Impression(
+                        billboard=billboard,
+                        date=item['date'],
+                        hour=item['hour'],
+                        impressions=item['impressions'],
+                        ots=1,
+                        lts=1,
+                        dwalltime=float(item['dwalltime']),
+                        frequency=0
+                    )
+                    impressions_to_create.append(new_impression)
+                    # Store reach IDs for bulk creation
+                    for reach_id in reach_ids:
+                        reach_ids_to_create.append(Impression_Reach_Id(reach_id=reach_id))
+                else:
+                    # Update existing impression
+                    impression = impression.first()
+                    impression.impressions += item['impressions']
+                    impression.ots += 1
+                    impression.lts += 1
+                    impression.dwalltime = mean([impression.dwalltime, float(item['dwalltime'])])
+                    impressions_to_update.append(impression)
+                    # Store reach IDs for bulk creation
+                    for reach_id in reach_ids:
+                        reach_ids_to_create.append(Impression_Reach_Id(reach_id=reach_id))
 
-            impression.save()
+            # Bulk create reach IDs
+            created_reach_ids = Impression_Reach_Id.objects.bulk_create(reach_ids_to_create)
 
-        return Response({"message": "Report updated successfully"}, status=status.HTTP_200_OK)
+            # Bulk create new impressions
+            created_impressions = Impression.objects.bulk_create(impressions_to_create)
+
+            # Bulk update existing impressions
+            if impressions_to_update:
+                Impression.objects.bulk_update(
+                    impressions_to_update,
+                    ['impressions', 'ots', 'lts', 'dwalltime']
+                )
+
+            # Create many-to-many relationships
+            for impression in created_impressions + impressions_to_update:
+                # Get the reach IDs for this impression
+                impression_reach_ids = created_reach_ids[:len(reach_ids)]
+                created_reach_ids = created_reach_ids[len(reach_ids):]
+                impression.reach.add(*impression_reach_ids)
+
+        return Response({
+            "message": "Report uploaded successfully"
+        }, status=status.HTTP_200_OK)
     
 class ImpreessionDetailView(APIView):
 
