@@ -125,7 +125,7 @@ class CalculateReportView(APIView):
             all_billboards_impressions = all_billboards_impressions.filter(hour__in=time_slot_list)
         if location:
             location_list = location.split(';')
-            all_billboards_impressions = all_billboards_impressions.filter(billboard__location__location__in=location_list)
+            all_billboards_impressions = all_billboards_impressions.filter(billboard__location__division__in=location_list)
         if billboard_type:
             all_billboards_impressions = all_billboards_impressions.filter(billboard__views__billboard_type=billboard_type)
         for billboard_data in billboards_data:
