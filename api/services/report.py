@@ -261,7 +261,8 @@ class CalculateReportView(APIView):
             'billboard_wise_data': billboard_wise_data,
             'location_wise_data': formatted_location_data,
             'area_wise_data': formatted_area_data,
-            'divisions': all_billboards_division_distinct
+            'divisions': all_billboards_division_distinct,
+            'billboard_types': all_billboards_type_distinct
         }, status=status.HTTP_200_OK)
         
 class UploadReportView(APIView):
