@@ -77,7 +77,7 @@ class Billboard_View(models.Model):
 class Campaign_Time(models.Model):
     start_time = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    billboard = models.ForeignKey('Billboard', on_delete=models.DO_NOTHING,related_name='campaign_times',null=True, blank=True)
+    billboard = models.ForeignKey('Billboard', on_delete=models.CASCADE,related_name='campaign_times',null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     instructions = models.TextField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -152,7 +152,7 @@ class TaskSubmissionRequest(models.Model):
     is_accepeted = models.CharField(choices=TASK_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True,editable=True)
     updated_at = models.DateTimeField(default=timezone.now)
-    campaign = models.ForeignKey('Campaign', on_delete=models.DO_NOTHING,related_name='monitoring_requests')
+    campaign = models.ForeignKey('Campaign', on_delete=models.CASCADE,related_name='monitoring_requests')
     task_list = models.ManyToManyField('TaskSubmission', related_name='monitoring_requests', blank=True)
     stuff = models.ForeignKey('Stuff', on_delete=models.DO_NOTHING,related_name='monitoring_requests',null=True, blank=True)
     
