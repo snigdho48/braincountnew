@@ -248,7 +248,9 @@ class CalculateReportView(APIView):
                 hour_dict[hour]['impressions'] += item['impressions']
         
         formatted_hour_data = list(hour_dict.values())
-        all_billboards_division_distinct = all_billboards_impressions.values_list('billboard__location__division',flat=True).distinct()
+        all_billboards_division_distinct = list(set(all_billboards_impressions.values_list('billboard__location__division',flat=True).distinct()))
+        all_billboards_type_distinct = list(set(all_billboards_impressions.values_list('billboard__views__billboard_type', flat=True)))
+        
 
         return Response({
             "message": "Report calculated successfully",
