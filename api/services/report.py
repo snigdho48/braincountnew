@@ -84,10 +84,10 @@ class CalculateReportView(APIView):
         billboard_type = request.query_params.get('billboard_type',None)
         time_slot = request.query_params.get('time_slots',None)
         timeSlots = {
-         'early_morning': [3, 4, 5,6],
-         'morning': [ 7, 8, 9, 10, 11],
-         'afternoon': [12, 13, 14, 15, 16],
-         'evening': [17, 18, 19, 20, 21, 22, 23, 0, 1, 2],
+         'early_morning': [0, 1, 2, 3, 4, 5, 6],
+         'morning': [ 7, 8, 9, 10, 11,12],
+         'afternoon': [ 13, 14, 15, 16,17,18],
+         'evening': [ 19, 20, 21, 22, 23],
        }
         
         

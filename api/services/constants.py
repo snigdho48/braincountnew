@@ -1,12 +1,16 @@
 BILLBOARD_STATUS = (
     ('Resolved', 'Resolved'),
     ('Good', 'Good'),
-    ('Broken', 'Broken'),
-    ('Under Maintenance', 'Under Maintenance'),
-    ('Not Working', 'Not Working'),
-    ('Not Clear', 'Not Clear'),
-    ('Not Visible', 'Not Visible'),
-    
+    ('Color Faded', 'Color Faded'),
+    ('Colour Severely Bad', 'Colour Severely Bad'),
+    ('Medium Damaged', 'Medium Damaged'),
+    ('Medium Teared', 'Medium Teared'),
+    ('Medium Missing', 'Medium Missing'), 
+    ('Structure Damaged', 'Structure Damaged'),
+    ('Structure Missing', 'Structure Missing'),
+    ('Communication Right', 'Communication Right'),
+    ('Communication Wrong', 'Communication Wrong'),
+    ('Communication Missing', 'Communication Missing'),
     ('Other', 'Other'),
 )
 BILLBORD_CATEGORY = [

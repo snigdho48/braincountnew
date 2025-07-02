@@ -66,7 +66,7 @@ class Billboard_View(models.Model):
     category = models.CharField(choices=BILLBORD_CATEGORY, max_length=200, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=BILLBOARD_STATUS,null=True, blank=True)
+    status = models.CharField(max_length=100, choices=BILLBOARD_STATUS,null=True, blank=True)
     details = models.ForeignKey('Billboard_info', on_delete=models.DO_NOTHING,related_name='billboards',null=True, blank=True)
 
 
